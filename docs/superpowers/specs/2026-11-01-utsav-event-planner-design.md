@@ -114,6 +114,7 @@ ideas: 3–10 × {title: str ≤80, description: str ≤300, kind: theme|decor|f
 - Task or vendor whose `category_key` is unknown → reassigned to `other` (category created with weight 1 if absent).
 - All weights zero/missing → equal weights.
 - Missing `contingency` category → added (see 4.4).
+- So a sanitised skeleton may hold up to 14 budget categories (Gemini's 12 + `other` + `contingency`).
 
 ### 4.4 Budget allocation (`planning/budget.py`)
 
@@ -125,6 +126,7 @@ ideas: 3–10 × {title: str ≤80, description: str ≤300, kind: theme|decor|f
 
 ### 4.5 Scheduling (`planning/timeline.py`)
 
+- "Today" is the current date in `Asia/Kolkata` (the server runs in UTC).
 - `original_due = event_date − days_before`.
 - Status per task: `done` (in progress map) · `compressed` (not done and `original_due < today`; displayed due date becomes `today`) · `due_today` · `upcoming`.
 - Sorted by displayed due date, then by input order.
@@ -150,7 +152,7 @@ Own root collection so it never mixes with SousChef's `users/{uid}` data in the 
 
 ```
 planner_users/{uid}/events/{eventId}
-  input, skeleton, version (int), created_at, updated_at
+  input, skeleton, generated_from ("ai" | "default"), version (int), created_at, updated_at
   progress:     {task_id: done_at}
   spend:        [{id, category_key, amount, note, at}]       # entries for removed categories roll into "Other"
   vendor_cache: {fetched_at, category_keys[], items[], sources[]}   # reused for 24 h
