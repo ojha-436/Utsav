@@ -70,3 +70,9 @@ def test_photo_ideas_sanitises_palette():
     d = PhotoIdeasDraft(ideas=[{"title": "Marigold", "description": "d", "palette": ["#AABBCC", "red", "#123"]},
                                {"title": "None", "description": "d", "palette": ["blue"]}])
     assert photo_ideas(FakeAI(vision=d), E(), b"img", "image/png") == [PhotoIdea(title="Marigold", description="d", palette=["#aabbcc"])]
+
+
+def test_find_vendors_requires_a_real_search():
+    text = '```json\n{"vendors":[{"category_key":"catering","name":"Maybe Invented","why":"w"}]}\n```'
+    r = find_vendors(FakeAI(grounded=GroundedText(text, [], searched=False)), E(), ["catering"])
+    assert r.items == [] and r.message == VENDOR_FALLBACK_MESSAGE

@@ -33,6 +33,7 @@ T = TypeVar("T", bound=BaseModel)
 class GroundedText:
     text: str
     sources: list[Source] = field(default_factory=list)
+    searched: bool = True  # False when the model answered without running Google Search
 
 
 class AIClient(Protocol):
@@ -72,7 +73,8 @@ class GeminiClient:
     def grounded(self, *, system: str, prompt: str, timeout_s: float = 45) -> GroundedText:
         tools = [types.Tool(google_search=types.GoogleSearch())]
         resp = self._generate([prompt], self._config(system, timeout_s, tools=tools))
-        return GroundedText(text=resp.text or "", sources=_sources(resp))
+        sources = _sources(resp)
+        return GroundedText(text=resp.text or "", sources=sources, searched=bool(sources) or _ran_search(resp))
 
     @staticmethod
     def _config(system: str, timeout_s: float, schema=None, tools=None) -> types.GenerateContentConfig:
@@ -125,3 +127,11 @@ def _sources(resp) -> list[Source]:
         if uri.startswith(("http://", "https://")):
             sources.append(Source(title=getattr(web, "title", None) or uri, uri=uri))
     return sources
+
+
+def _ran_search(resp) -> bool:
+    """Gemini sometimes omits source chunks even after searching; the queries still show it searched."""
+    try:
+        return bool(resp.candidates[0].grounding_metadata.web_search_queries)
+    except (AttributeError, IndexError, TypeError):
+        return False

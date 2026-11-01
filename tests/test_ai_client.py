@@ -90,3 +90,11 @@ def test_vision_sends_image_part():
 def test_null_ai_raises():
     with pytest.raises(AIUnavailable):
         NullAI().structured(system="s", prompt="p", schema=Out)
+
+
+def test_grounded_reports_whether_search_ran():
+    with_queries = SimpleNamespace(text="t", candidates=[SimpleNamespace(
+        grounding_metadata=SimpleNamespace(grounding_chunks=None, web_search_queries=["caterers in Jaipur"]))])
+    assert make(with_queries)[0].grounded(system="s", prompt="p").searched is True
+    assert make(resp("t", [web("https://a.in", "A")]))[0].grounded(system="s", prompt="p").searched is True
+    assert make(SimpleNamespace(text="t", candidates=[]))[0].grounded(system="s", prompt="p").searched is False

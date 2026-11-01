@@ -74,6 +74,8 @@ def update_event(body: UpdateEventRequest, event_id: str = Depends(event_id_para
     if body.input is not None:
         if body.input.event_date != record.input.event_date:
             validate_event_date(body.input.event_date, today)
+        if body.input != record.input:
+            record.vendor_cache = None  # vendor results depend on city, size and budget
         record.input = body.input
     record.skeleton = body.skeleton
     record.generated_from = "ai"

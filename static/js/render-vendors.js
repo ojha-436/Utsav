@@ -2,6 +2,7 @@
 import { el, fmtDate } from "./format.js";
 import { itemCheckbox, statusBadge } from "./render-timeline.js";
 import { canTrack } from "./tracking.js";
+import { vendorSearch } from "./vendor-search.js";
 
 export function renderVendors(plan) {
   const wrap = el("div", { class: "vendors" });
@@ -16,5 +17,6 @@ export function renderVendors(plan) {
     el("ul", { class: "questions" }, vendor.questions_to_ask.map((q) => el("li", {}, q))),
     canTrack() && el("label", { class: "check-row", for: `chk-${vendor.id}` }, itemCheckbox(vendor, `Mark ${vendor.role} booked`), "Booked"),
   ))));
+  wrap.append(vendorSearch(plan));
   return wrap;
 }

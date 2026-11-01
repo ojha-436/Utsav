@@ -80,6 +80,8 @@ def find_vendors(ai: AIClient, event: EventInput, category_keys: list[str]) -> V
         raw_items = extract_json(grounded.text).get("vendors")
     except (AIUnavailable, ValueError):
         return VendorResponse(items=[], sources=[], message=VENDOR_FALLBACK_MESSAGE)
+    if not grounded.searched:  # names without a search behind them may be invented
+        return VendorResponse(items=[], sources=[], message=VENDOR_FALLBACK_MESSAGE)
 
     wanted, per_category, items = set(category_keys), Counter(), []
     for raw in raw_items if isinstance(raw_items, list) else []:
