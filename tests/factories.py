@@ -1,7 +1,14 @@
 """Shared test data. Plain dicts so tests can tweak them before validation."""
 from datetime import date
 
+from app.config import Settings
+
 TODAY = date(2026, 11, 1)
+
+
+def safe_settings(**overrides) -> Settings:
+    """Settings that can never reach a real model or database."""
+    return Settings(store="memory", gemini_api_key="", use_vertexai=False, **overrides)
 
 _CATEGORIES = [("venue", "Venue", 25), ("catering", "Catering", 35), ("decor", "Decor", 30), ("contingency", "Contingency", 10)]
 _TASK_KEYS = ["venue", "catering", "decor"]
