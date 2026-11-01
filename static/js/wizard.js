@@ -33,7 +33,8 @@ const RULES = {
     return "";
   },
   guest_count: (value) => (isWholeNumberBetween(value, 1, 5000) ? "" : "Enter between 1 and 5,000 guests."),
-  budget_inr: (value) => (isWholeNumberBetween(value, 1000, 100000000) ? "" : "Enter a budget from ₹1,000 to ₹10 crore."),
+  budget_inr: (value) =>
+    isWholeNumberBetween(value, 1000, 100000000) ? "" : "Enter a budget from ₹1,000 to ₹10 crore.",
   city: (value) => {
     const length = value.trim().length;
     return length >= 2 && length <= 80 ? "" : "Enter your city.";
@@ -55,7 +56,9 @@ function validateDetails() {
 
 function show(n, { focus = true } = {}) {
   step = n;
-  form.querySelectorAll(".step").forEach((fs) => { fs.hidden = Number(fs.dataset.step) !== n; });
+  form.querySelectorAll(".step").forEach((fs) => {
+    fs.hidden = Number(fs.dataset.step) !== n;
+  });
   document.querySelectorAll("[data-step-marker]").forEach((li) => {
     if (Number(li.dataset.stepMarker) === n) li.setAttribute("aria-current", "step");
     else li.removeAttribute("aria-current");
@@ -104,7 +107,12 @@ async function onGenerate(event) {
   try {
     const res = await api("/api/plans/generate", { method: "POST", body: { input } });
     Object.assign(state, {
-      input, skeleton: res.skeleton, plan: res.plan, generatedFrom: res.plan.generated_from, eventId: null, spend: [],
+      input,
+      skeleton: res.skeleton,
+      plan: res.plan,
+      generatedFrom: res.plan.generated_from,
+      eventId: null,
+      spend: [],
     });
     setStatus("Your plan is ready.");
     emit();
@@ -137,7 +145,9 @@ export function initWizard() {
   form.addEventListener("submit", onGenerate);
   form.querySelectorAll(".chip").forEach((chip) => chip.addEventListener("click", () => toggleChip(chip)));
   form.querySelectorAll('input[name="event_type"]').forEach((radio) => {
-    radio.addEventListener("change", () => { document.body.dataset.eventType = radio.value; });
+    radio.addEventListener("change", () => {
+      document.body.dataset.eventType = radio.value;
+    });
   });
 
   const notes = form.elements.notes;

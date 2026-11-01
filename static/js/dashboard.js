@@ -10,8 +10,16 @@ import { applyEventResponse, clearPlan, emit, state } from "./state.js";
 import { clearAlert, setStatus, showAlert } from "./ui.js";
 import { resetWizard } from "./wizard.js";
 
+const STANDARD_PLAN_NOTICE =
+  "Standard plan — the AI planner is unavailable right now, so this is a template. Try refining it later.";
+const SHORT_NOTICE = "Short notice — some tasks were already due, so they've moved to today.";
 const TABS = ["budget", "timeline", "vendors", "ideas"];
-const RENDERERS = { budget: renderBudget, timeline: renderTimeline, vendors: renderVendors, ideas: renderIdeas };
+const RENDERERS = {
+  budget: renderBudget,
+  timeline: renderTimeline,
+  vendors: renderVendors,
+  ideas: renderIdeas,
+};
 
 // Extension point for signed-in features (set by events.js): persist a refined
 // skeleton to a saved event and return the EventResponse.
@@ -34,15 +42,20 @@ export function renderPlan() {
   document.body.dataset.eventType = e.event_type;
   document.getElementById("plan-title").textContent = plan.title;
   document.getElementById("plan-summary").textContent = plan.summary;
-  document.getElementById("plan-meta").textContent =
-    `${EVENT_LABELS[e.event_type]} · ${fmtDate(e.event_date)} · ${e.city} · ${e.guest_count} guests · ${inr(e.budget_inr)}`;
+  document.getElementById("plan-meta").textContent = [
+    EVENT_LABELS[e.event_type],
+    fmtDate(e.event_date),
+    e.city,
+    `${e.guest_count} guests`,
+    inr(e.budget_inr),
+  ].join(" · ");
 
   const banners = clear(document.getElementById("banners"));
   if (plan.generated_from === "default") {
-    banners.append(banner("info", "Standard plan — the AI planner is unavailable right now, so this is a template. Try refining it later."));
+    banners.append(banner("info", STANDARD_PLAN_NOTICE));
   }
   if (plan.timeline.short_notice) {
-    banners.append(banner("warn", "Short notice — some tasks were already due, so they've moved to today."));
+    banners.append(banner("warn", SHORT_NOTICE));
   }
   for (const tab of TABS) {
     clear(document.getElementById(`panel-${tab}`)).append(RENDERERS[tab](plan));

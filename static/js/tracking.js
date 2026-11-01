@@ -14,9 +14,12 @@ export async function toggleItem(checkbox, itemId) {
   checkbox.disabled = true;
   try {
     const res = await api(`${eventPath()}/tasks/${encodeURIComponent(itemId)}`, {
-      method: "PATCH", body: { done: checkbox.checked },
+      method: "PATCH",
+      body: { done: checkbox.checked },
     });
-    if (applyIfCurrent(eventId, res)) document.querySelector(`input[data-item="${CSS.escape(itemId)}"]`)?.focus();
+    if (applyIfCurrent(eventId, res)) {
+      document.querySelector(`input[data-item="${CSS.escape(itemId)}"]`)?.focus();
+    }
   } catch (err) {
     checkbox.checked = !checkbox.checked;
     checkbox.disabled = false;

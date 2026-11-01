@@ -22,7 +22,9 @@ export function openLogin() {
 function setMode(next) {
   mode = next;
   const signup = mode === "signup";
-  document.getElementById("login-title").textContent = signup ? "Create your Utsav account" : "Sign in to save your plan";
+  document.getElementById("login-title").textContent = signup
+    ? "Create your Utsav account"
+    : "Sign in to save your plan";
   submit.textContent = signup ? "Create account" : "Sign in";
   document.getElementById("mode-prompt").textContent = signup ? "Already have an account?" : "New to Utsav?";
   toggle.textContent = signup ? "Sign in instead" : "Create an account";
@@ -45,10 +47,16 @@ export function renderAccount(user) {
   if (user) {
     nav.append(
       el("span", { class: "muted account-email" }, user.email ?? "Signed in"),
-      el("button", { type: "button", class: "btn btn-ghost btn-small", onclick: () => signOut() }, "Sign out"),
+      el(
+        "button",
+        { type: "button", class: "btn btn-ghost btn-small", onclick: () => signOut() },
+        "Sign out",
+      ),
     );
   } else {
-    nav.append(el("button", { type: "button", class: "btn btn-ghost btn-small", onclick: openLogin }, "Sign in"));
+    nav.append(
+      el("button", { type: "button", class: "btn btn-ghost btn-small", onclick: openLogin }, "Sign in"),
+    );
   }
 }
 
@@ -81,7 +89,9 @@ export function initAccount() {
     }
     attempt(() => (mode === "signup" ? signUpEmail(email, password) : signInEmail(email, password)));
   });
-  dialog.addEventListener("close", () => { if (!state.user) pendingSave = false; });
+  dialog.addEventListener("close", () => {
+    if (!state.user) pendingSave = false;
+  });
   document.getElementById("save-plan").addEventListener("click", () => {
     if (state.user) {
       saveCurrentPlan().catch((err) => showAlert(err.message));

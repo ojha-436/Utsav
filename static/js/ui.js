@@ -19,11 +19,20 @@ export function clearAlert() {
 export function showAlert(message, retry) {
   clear(alertBox).append(el("p", {}, message));
   if (retry) {
-    alertBox.append(el("button", {
-      type: "button",
-      class: "btn btn-small",
-      onclick: () => { clearAlert(); retry(); },
-    }, "Try again"));
+    alertBox.append(
+      el(
+        "button",
+        {
+          type: "button",
+          class: "btn btn-small",
+          onclick: () => {
+            clearAlert();
+            retry();
+          },
+        },
+        "Try again",
+      ),
+    );
   }
   alertBox.hidden = false;
 }

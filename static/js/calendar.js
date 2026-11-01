@@ -5,7 +5,9 @@ import { state } from "./state.js";
 import { setStatus, showAlert } from "./ui.js";
 
 function doneIds(plan) {
-  return [...plan.timeline.tasks, ...plan.vendors].filter((item) => item.status === "done").map((item) => item.id);
+  return [...plan.timeline.tasks, ...plan.vendors]
+    .filter((item) => item.status === "done")
+    .map((item) => item.id);
 }
 
 /** Downloads the current plan as an .ics file (open tasks and vendor bookings). */

@@ -48,7 +48,10 @@ function deleteButton(summary) {
     if (button.dataset.confirm !== "yes") {
       button.dataset.confirm = "yes";
       button.textContent = "Tap again to delete";
-      setTimeout(() => { button.dataset.confirm = ""; button.textContent = "Delete"; }, 4000);
+      setTimeout(() => {
+        button.dataset.confirm = "";
+        button.textContent = "Delete";
+      }, 4000);
       return;
     }
     deleteEvent(summary.id).catch((err) => showAlert(err.message));
@@ -63,12 +66,29 @@ export async function loadEvents() {
     return;
   }
   const events = await api("/api/events");
-  clear(list).append(...events.map((summary) => el("li", { class: "event-row" },
-    el("button", { type: "button", class: "link-button event-open", onclick: () => openEvent(summary.id).catch((err) => showAlert(err.message)) },
-      summary.title),
-    el("span", { class: "muted" }, `${EVENT_LABELS[summary.event_type]} · ${fmtDate(summary.event_date)}`),
-    deleteButton(summary),
-  )));
+  clear(list).append(
+    ...events.map((summary) =>
+      el(
+        "li",
+        { class: "event-row" },
+        el(
+          "button",
+          {
+            type: "button",
+            class: "link-button event-open",
+            onclick: () => openEvent(summary.id).catch((err) => showAlert(err.message)),
+          },
+          summary.title,
+        ),
+        el(
+          "span",
+          { class: "muted" },
+          `${EVENT_LABELS[summary.event_type]} · ${fmtDate(summary.event_date)}`,
+        ),
+        deleteButton(summary),
+      ),
+    ),
+  );
   section.hidden = events.length === 0;
 }
 

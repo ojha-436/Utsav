@@ -21,7 +21,9 @@ onChange(() => {
 // Accounts load separately (Firebase comes from a CDN) so planning never depends on them.
 async function startAccounts() {
   const [{ initAuth }, accountModule, { loadEvents }] = await Promise.all([
-    import("./auth.js"), import("./account.js"), import("./events.js"),
+    import("./auth.js"),
+    import("./account.js"),
+    import("./events.js"),
   ]);
   const enabled = await initAuth(async (user) => {
     accountModule.renderAccount(user);

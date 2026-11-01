@@ -23,7 +23,8 @@ const FRIENDLY = {
   "auth/too-many-requests": "Too many attempts. Wait a moment and try again.",
   "auth/popup-blocked": "Your browser blocked the sign-in window. Allow pop-ups and try again.",
   "auth/network-request-failed": "Network problem. Check your connection and try again.",
-  "auth/unauthorized-domain": "Google sign-in isn't switched on for this site yet. Use email and password for now.",
+  "auth/unauthorized-domain":
+    "Google sign-in isn't switched on for this site yet. Use email and password for now.",
 };
 
 /** A plain-language message for a Firebase Auth error. */
@@ -32,7 +33,8 @@ export function authMessage(err) {
 }
 
 /** True when the user simply closed the Google pop-up. */
-export const isCancelled = (err) => ["auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(err?.code);
+export const isCancelled = (err) =>
+  ["auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(err?.code);
 
 /**
  * Starts Firebase Auth and calls `onUser` on every sign-in change.

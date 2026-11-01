@@ -10,9 +10,18 @@ const TYPES = ["image/jpeg", "image/png", "image/webp"];
 async function upload(input, button, preview) {
   const file = input.files?.[0];
   const error = input.closest("form").querySelector(".field-error");
-  if (!file) { error.textContent = "Choose a photo first."; return; }
-  if (!TYPES.includes(file.type)) { error.textContent = "Use a JPEG, PNG or WebP image."; return; }
-  if (file.size > MAX_BYTES) { error.textContent = "That photo is over 5 MB. Try a smaller one."; return; }
+  if (!file) {
+    error.textContent = "Choose a photo first.";
+    return;
+  }
+  if (!TYPES.includes(file.type)) {
+    error.textContent = "Use a JPEG, PNG or WebP image.";
+    return;
+  }
+  if (file.size > MAX_BYTES) {
+    error.textContent = "That photo is over 5 MB. Try a smaller one.";
+    return;
+  }
   error.textContent = "";
   const form = new FormData();
   form.append("image", file);
@@ -45,38 +54,67 @@ function uploadForm() {
     const file = input.files?.[0];
     if (file && TYPES.includes(file.type)) {
       const url = URL.createObjectURL(file);
-      preview.append(el("img", { src: url, alt: "Selected inspiration photo", onload: () => URL.revokeObjectURL(url) }));
+      preview.append(
+        el("img", { src: url, alt: "Selected inspiration photo", onload: () => URL.revokeObjectURL(url) }),
+      );
     }
   });
-  const form = el("form", { class: "photo-form", novalidate: true },
-    el("label", { for: "photo-input" }, "Upload a venue, decor or mood-board photo (JPEG, PNG or WebP, up to 5 MB)"),
-    input, preview, el("p", { class: "field-error", role: "alert" }), button);
-  form.addEventListener("submit", (event) => { event.preventDefault(); upload(input, button, preview); });
+  const form = el(
+    "form",
+    { class: "photo-form", novalidate: true },
+    el(
+      "label",
+      { for: "photo-input" },
+      "Upload a venue, decor or mood-board photo (JPEG, PNG or WebP, up to 5 MB)",
+    ),
+    input,
+    preview,
+    el("p", { class: "field-error", role: "alert" }),
+    button,
+  );
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    upload(input, button, preview);
+  });
   return form;
 }
 
 function ideaCard(idea) {
-  return el("article", { class: "card idea photo-idea" },
+  return el(
+    "article",
+    { class: "card idea photo-idea" },
     el("h4", {}, idea.title),
     el("p", {}, idea.description),
-    el("ul", { class: "palette", "aria-label": "Colour palette" }, idea.palette.map((hex) => {
-      const swatch = el("span", { class: "palette-swatch", "aria-hidden": "true" });
-      swatch.style.backgroundColor = hex;
-      return el("li", {}, swatch, el("code", {}, hex));
-    })));
+    el(
+      "ul",
+      { class: "palette", "aria-label": "Colour palette" },
+      idea.palette.map((hex) => {
+        const swatch = el("span", { class: "palette-swatch", "aria-hidden": "true" });
+        swatch.style.backgroundColor = hex;
+        return el("li", {}, swatch, el("code", {}, hex));
+      }),
+    ),
+  );
 }
 
 /** The "Ideas from your photo" section (upload form for saved events). */
 export function photoIdeas(plan) {
   const section = el("section", { class: "card photo-ideas" }, el("h3", {}, "Ideas from your photo"));
   if (!state.eventId) {
-    section.append(el("p", { class: "muted" }, "Save this plan to upload an inspiration photo and get matching ideas."));
+    section.append(
+      el("p", { class: "muted" }, "Save this plan to upload an inspiration photo and get matching ideas."),
+    );
     return section;
   }
   section.append(uploadForm());
   if (plan.photo_ideas.length) {
-    section.append(el("div", { class: "card-grid", id: "photo-idea-list", tabindex: "-1", "aria-label": "Ideas from your photo" },
-      plan.photo_ideas.map(ideaCard)));
+    section.append(
+      el(
+        "div",
+        { class: "card-grid", id: "photo-idea-list", tabindex: "-1", "aria-label": "Ideas from your photo" },
+        plan.photo_ideas.map(ideaCard),
+      ),
+    );
   }
   return section;
 }
