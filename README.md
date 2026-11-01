@@ -11,9 +11,8 @@
 ![Coverage](https://img.shields.io/badge/coverage-94%25-2e7d32)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Live app:** https://utsav-823065407403.asia-south1.run.app
 
-Built for **PromptWar 5** (Google × Hack2skill).
+Built for **Virtual PromptWars Challenge 5** (Google × Hack2skill).
 
 ![Landing page](docs/screenshots/style-landing-1280.png)
 
