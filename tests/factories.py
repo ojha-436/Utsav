@@ -54,3 +54,16 @@ def skeleton_dict(n_tasks: int = 8, drop_contingency: bool = False, **overrides)
         ],
     }
     return base | overrides
+
+
+AUTH_U1 = {"Authorization": "Bearer u1"}
+AUTH_U2 = {"Authorization": "Bearer u2"}
+
+
+def fake_verify(token: str) -> str:
+    """Accepts the test tokens "u1" and "u2" as their own uids."""
+    from app.errors import Unauthorized
+
+    if token in {"u1", "u2"}:
+        return token
+    raise Unauthorized("bad token")

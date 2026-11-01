@@ -13,11 +13,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from google import genai
 
 from app.ai.client import AIClient, GeminiClient, NullAI
+from app.auth import firebase_verifier
 from app.config import Settings
 from app.errors import AppError, PayloadTooLarge
 from app.logs import configure_logging
 from app.ratelimit import RateLimiter
 from app.routes import meta, plans
+from app.store import EventStore, FirestoreEventStore, InMemoryEventStore
 
 log = logging.getLogger("utsav.http")
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -92,12 +94,22 @@ def build_ai(settings: Settings) -> AIClient:
     return NullAI()
 
 
+def build_store(settings: Settings) -> EventStore:
+    if settings.store == "firestore":
+        from google.cloud import firestore
+
+        return FirestoreEventStore(firestore.Client(project=settings.gcp_project or None))
+    return InMemoryEventStore()
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     configure_logging()
     app = FastAPI(title="Utsav", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.state.ai = build_ai(settings)
+    app.state.store = build_store(settings)
+    app.state.verify_token = firebase_verifier(settings.gcp_project)
     app.state.ai_limiter = RateLimiter(10, 60)
     app.state.photo_limiter = RateLimiter(5, 60)
     _install_error_handlers(app)

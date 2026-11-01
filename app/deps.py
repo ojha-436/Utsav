@@ -6,6 +6,7 @@ from fastapi import Request
 
 from app.ai.client import AIClient
 from app.ratelimit import client_ip
+from app.store import EventStore
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -25,6 +26,10 @@ def get_now() -> datetime:
 
 def get_ai(request: Request) -> AIClient:
     return request.app.state.ai
+
+
+def get_store(request: Request) -> EventStore:
+    return request.app.state.store
 
 
 def rate_limit_ai(request: Request) -> None:
