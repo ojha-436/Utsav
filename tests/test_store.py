@@ -86,3 +86,38 @@ def test_list_newest_first():
     t[0] = datetime(2026, 11, 2, tzinfo=UTC)
     b = new(s)
     assert [r.id for r in s.list("u1")] == [b.id, a.id]
+
+
+class _FakeFirestore:
+    """Just enough of the Firestore client for FirestoreEventStore.update's plumbing."""
+
+    def __init__(self):
+        self.max_attempts = None
+
+    def collection(self, _name):
+        return self
+
+    def document(self, _id=None):
+        return self
+
+    def transaction(self, max_attempts=5):
+        self.max_attempts = max_attempts
+        return object()
+
+
+def test_firestore_contention_is_a_409_not_a_500(monkeypatch):
+    from google.cloud import firestore
+
+    from app.errors import Conflict
+    from app.store import FirestoreEventStore
+
+    def always_contended(_fn):
+        def run(_transaction):
+            raise ValueError("Failed to commit transaction in 15 attempts.")
+        return run
+
+    monkeypatch.setattr(firestore, "transactional", always_contended)
+    client = _FakeFirestore()
+    with pytest.raises(Conflict):
+        FirestoreEventStore(client).update("u1", "e1", lambda rec: None)
+    assert client.max_attempts >= 10

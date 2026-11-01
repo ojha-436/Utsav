@@ -22,6 +22,10 @@ class NotFound(AppError):
     status, code = 404, "not_found"
 
 
+class Conflict(AppError):
+    status, code = 409, "conflict"
+
+
 class PayloadTooLarge(AppError):
     status, code = 413, "payload_too_large"
 

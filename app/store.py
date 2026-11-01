@@ -7,7 +7,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
-from app.errors import NotFound
+from app.errors import Conflict, NotFound
 from app.models import EventInput, PhotoIdea, PlanSkeleton, PlanSource, Source, SpendEntry, VendorItem
 
 
@@ -49,6 +49,9 @@ class EventStore(Protocol):
         ...
 
     def delete(self, uid: str, event_id: str) -> None: ...
+
+
+FIRESTORE_MAX_ATTEMPTS = 15  # quick successive ticks on one event contend for the same document
 
 
 def _not_found() -> NotFound:
@@ -142,7 +145,12 @@ class FirestoreEventStore:
             transaction.set(ref, record.model_dump(mode="json"))
             return record
 
-        return run(self._client.transaction())
+        try:
+            return run(self._client.transaction(max_attempts=FIRESTORE_MAX_ATTEMPTS))
+        except ValueError as exc:
+            if str(exc).startswith("Failed to commit transaction"):
+                raise Conflict("Too many changes at once; please try again") from exc
+            raise
 
     def delete(self, uid: str, event_id: str) -> None:
         ref = self._events(uid).document(event_id)
