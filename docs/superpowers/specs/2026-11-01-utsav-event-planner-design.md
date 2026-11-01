@@ -139,7 +139,8 @@ event: EventInput, title, summary, generated_from: "ai" | "default"
 budget: {total, per_guest, lines[], warnings[]}
 timeline: {tasks[{id,title,category_key,original_due,due,status}], short_notice, completion_pct}
 vendors: [{id, category_key, role, questions_to_ask[], original_book_by, book_by, status}]
-ideas: [...skeleton ideas], photo_ideas: [...]          # photo_ideas empty for guests
+ideas: skeleton ideas as-is
+photo_ideas: [{title, description, palette[hex]}]       # empty for guests
 tracking: {lines[{key,label,planned,actual,variance}], other_actual} | null   # null for guests
 ```
 
