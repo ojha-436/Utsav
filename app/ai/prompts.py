@@ -60,6 +60,7 @@ def _event(event: EventInput) -> dict:
 
 
 def skeleton_prompt(event: EventInput, today: date) -> str:
+    """The prompt for a new plan skeleton."""
     return (
         f"Create a planning skeleton for this event. Today is {today.isoformat()}.\n"
         f"{EVENT_GUIDANCE[event.event_type]}\n{_SKELETON_RULES}\n"
@@ -68,6 +69,7 @@ def skeleton_prompt(event: EventInput, today: date) -> str:
 
 
 def refine_prompt(event: EventInput, skeleton: PlanSkeleton, instruction: str, today: date) -> str:
+    """The prompt to revise an existing skeleton, keeping ids and keys for unchanged items."""
     payload = {"event": _event(event), "current_skeleton": skeleton.model_dump(mode="json"), "instruction": instruction}
     return (
         "Revise the current planning skeleton to follow the user's instruction. "
@@ -80,6 +82,7 @@ def refine_prompt(event: EventInput, skeleton: PlanSkeleton, instruction: str, t
 
 
 def vendors_prompt(event: EventInput, category_keys: list[str]) -> str:
+    """The grounded-search prompt for real local vendors, answered as fenced JSON."""
     return (
         "Use Google Search to find real, currently operating vendors in the event's city for each listed category. "
         "Suggest up to 3 per category that fit the guest count, budget and vibe. "
@@ -92,6 +95,7 @@ def vendors_prompt(event: EventInput, category_keys: list[str]) -> str:
 
 
 def photo_prompt(event: EventInput) -> str:
+    """The vision prompt that turns an inspiration photo into decor ideas with palettes."""
     return (
         "The image is an inspiration photo (a venue, decor or mood board). "
         "Suggest up to 5 theme or decor ideas for this event that borrow its colours, materials and mood "

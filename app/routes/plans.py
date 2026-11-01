@@ -29,6 +29,7 @@ router = APIRouter(prefix="/api", dependencies=[Depends(rate_limit_ai)])
 
 @router.post("/plans/generate", response_model=PlanResponse)
 def generate(body: GenerateRequest, ai: AIDep, today: TodayDep) -> PlanResponse:
+    """A new plan for the event (the built-in plan if Gemini is unavailable)."""
     validate_event_date(body.input.event_date, today)
     skeleton, source = generate_skeleton(ai, body.input, today)
     return PlanResponse(skeleton=skeleton, plan=assemble_plan(body.input, skeleton, today, source))
@@ -36,12 +37,14 @@ def generate(body: GenerateRequest, ai: AIDep, today: TodayDep) -> PlanResponse:
 
 @router.post("/plans/refine", response_model=PlanResponse)
 def refine(body: RefineRequest, ai: AIDep, today: TodayDep) -> PlanResponse:
+    """The plan revised by a plain-language instruction."""
     skeleton = refine_skeleton(ai, body.input, body.skeleton, body.instruction, today)
     return PlanResponse(skeleton=skeleton, plan=assemble_plan(body.input, skeleton, today))
 
 
 @router.post("/calendar.ics")
 def calendar(body: CalendarRequest, today: TodayDep, now: NowDep) -> Response:
+    """The plan's open tasks and bookings as a downloadable .ics file."""
     plan = assemble_plan(body.input, body.skeleton, today, done_ids=set(body.done_ids))
     return Response(
         build_calendar(plan.event, plan.title, plan.timeline.tasks, plan.vendors, now),

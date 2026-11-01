@@ -15,6 +15,7 @@ from app.wiring import build_ai, build_store
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    """Builds the FastAPI app. Tests pass safe settings; production reads the environment."""
     settings = settings or Settings()
     configure_logging()
     app = FastAPI(title="Utsav", docs_url=None, redoc_url=None, openapi_url=None)

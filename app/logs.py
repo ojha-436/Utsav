@@ -9,7 +9,10 @@ _FIELDS = ("request_id", "method", "path", "status", "latency_ms", "model", "rea
 
 
 class JsonFormatter(logging.Formatter):
+    """Formats log records as one JSON object per line for Cloud Logging."""
+
     def format(self, record: logging.LogRecord) -> str:
+        """The record as JSON, including the whitelisted request fields."""
         payload = {"severity": record.levelname, "message": record.getMessage(), "logger": record.name}
         payload |= {key: getattr(record, key) for key in _FIELDS if hasattr(record, key)}
         if record.exc_info:
@@ -22,6 +25,7 @@ class StdoutHandler(logging.StreamHandler):
 
     @property
     def stream(self) -> TextIO:
+        """The current sys.stdout, looked up on every write."""
         return sys.stdout
 
     @stream.setter
@@ -30,6 +34,7 @@ class StdoutHandler(logging.StreamHandler):
 
 
 def configure_logging() -> None:
+    """Installs the JSON stdout handler once and quiets noisy HTTP-client loggers."""
     root = logging.getLogger()
     if any(isinstance(h, StdoutHandler) for h in root.handlers):
         return

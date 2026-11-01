@@ -29,10 +29,12 @@ def get_now() -> datetime:
 
 
 def get_ai(request: Request) -> AIClient:
+    """The app's Gemini client (swapped for a fake in tests)."""
     return request.app.state.ai
 
 
 def get_store(request: Request) -> EventStore:
+    """The app's event store (in-memory in tests, Firestore in production)."""
     return request.app.state.store
 
 

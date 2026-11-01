@@ -1,3 +1,5 @@
+"""Health check and the public Firebase web config."""
+
 from fastapi import APIRouter, Request
 
 router = APIRouter(prefix="/api")
@@ -5,6 +7,7 @@ router = APIRouter(prefix="/api")
 
 @router.get("/healthz")
 def healthz() -> dict:
+    """Liveness check for Cloud Run."""
     return {"status": "ok"}
 
 

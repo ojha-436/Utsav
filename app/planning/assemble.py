@@ -19,6 +19,17 @@ def assemble_plan(
     spend: list[SpendEntry] | None = None,
     photo_ideas: Iterable[PhotoIdea] = (),
 ) -> Plan:
+    """Computes the full plan: exact budget, dated timeline, vendor bookings and tracking.
+
+    Args:
+        event: The user's inputs.
+        skeleton: The plan skeleton (from Gemini, a default, or a saved event).
+        today: Today's date in IST, used to move overdue items to today.
+        generated_from: Whether the skeleton came from the AI or the default plan.
+        done_ids: Ticked task and vendor ids; ids no longer in the plan are ignored.
+        spend: Spend entries for saved events; None for guests (no tracking).
+        photo_ideas: Ideas from uploaded photos, newest first.
+    """
     budget = allocate(
         event.budget_inr, ensure_contingency(skeleton.budget_categories), event.guest_count, event.event_type
     )

@@ -36,35 +36,48 @@ T = TypeVar("T", bound=BaseModel)
 
 @dataclass
 class GroundedText:
+    """Model text from a Google Search–grounded call, with its citation sources."""
+
     text: str
     sources: list[Source] = field(default_factory=list)
     searched: bool = True  # False when the model answered without running Google Search
 
 
 class AIClient(Protocol):
-    def structured(self, *, system: str, prompt: str, schema: type[T], timeout_s: float = 30) -> T: ...
+    """What the rest of the app needs from Gemini. GeminiClient implements it; tests use a fake."""
 
-    def grounded(self, *, system: str, prompt: str, timeout_s: float = 45) -> GroundedText: ...
+    def structured(self, *, system: str, prompt: str, schema: type[T], timeout_s: float = 30) -> T:
+        """Returns `schema` parsed from a JSON answer to `prompt`."""
+        ...
 
-    def vision(
-        self, *, system: str, prompt: str, image: bytes, mime: str, schema: type[T], timeout_s: float = 30
-    ) -> T: ...
+    def grounded(self, *, system: str, prompt: str, timeout_s: float = 45) -> GroundedText:
+        """Answers `prompt` with Google Search grounding; sources come from grounding metadata only."""
+        ...
+
+    def vision(self, *, system: str, prompt: str, image: bytes, mime: str, schema: type[T], timeout_s: float = 30) -> T:
+        """Returns `schema` parsed from a JSON answer about `image`."""
+        ...
 
 
 class NullAI:
     """Used when no Gemini credentials are configured; every call degrades gracefully upstream."""
 
     def structured(self, **_: Any) -> NoReturn:
+        """Always raises AIUnavailable; callers fall back gracefully."""
         raise AIUnavailable("AI is not configured")
 
     def grounded(self, **_: Any) -> NoReturn:
+        """Always raises AIUnavailable; callers fall back gracefully."""
         raise AIUnavailable("AI is not configured")
 
     def vision(self, **_: Any) -> NoReturn:
+        """Always raises AIUnavailable; callers fall back gracefully."""
         raise AIUnavailable("AI is not configured")
 
 
 class GeminiClient:
+    """Calls Gemini with timeouts, one retry, a fallback model and one JSON repair attempt."""
+
     def __init__(
         self,
         api_key: str,
@@ -79,13 +92,16 @@ class GeminiClient:
         self._sleep = sleep
 
     def structured(self, *, system: str, prompt: str, schema: type[T], timeout_s: float = 30) -> T:
+        """Structured JSON call; see AIClient.structured."""
         return self._json_call([prompt], self._config(system, timeout_s, schema=schema), schema)
 
     def vision(self, *, system: str, prompt: str, image: bytes, mime: str, schema: type[T], timeout_s: float = 30) -> T:
+        """Image + prompt structured call; see AIClient.vision."""
         contents = [types.Part.from_bytes(data=image, mime_type=mime), prompt]
         return self._json_call(contents, self._config(system, timeout_s, schema=schema), schema)
 
     def grounded(self, *, system: str, prompt: str, timeout_s: float = 45) -> GroundedText:
+        """Google Search–grounded call; see AIClient.grounded."""
         tools = [types.Tool(google_search=types.GoogleSearch())]
         resp = self._generate([prompt], self._config(system, timeout_s, tools=tools))
         sources = _sources(resp)

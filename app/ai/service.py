@@ -26,16 +26,25 @@ _HEX = re.compile(r"#[0-9a-fA-F]{6}")
 
 
 class PhotoIdeaDraft(BaseModel):
+    """One photo idea as Gemini returns it, before validation."""
+
     title: str
     description: str
     palette: list[str]
 
 
 class PhotoIdeasDraft(BaseModel):
+    """Gemini's response schema for photo ideas."""
+
     ideas: list[PhotoIdeaDraft]
 
 
 def generate_skeleton(ai: AIClient, event: EventInput, today: date) -> tuple[PlanSkeleton, PlanSource]:
+    """A new skeleton from Gemini, or the built-in default plan if the AI fails.
+
+    Returns:
+        The skeleton and where it came from ("ai" or "default").
+    """
     try:
         draft = ai.structured(system=SYSTEM_PLANNER, prompt=skeleton_prompt(event, today), schema=SkeletonDraft)
         return sanitize_skeleton(draft), "ai"
@@ -47,6 +56,7 @@ def generate_skeleton(ai: AIClient, event: EventInput, today: date) -> tuple[Pla
 def refine_skeleton(
     ai: AIClient, event: EventInput, skeleton: PlanSkeleton, instruction: str, today: date
 ) -> PlanSkeleton:
+    """The skeleton revised by `instruction`. Raises AIUnavailable rather than returning a broken plan."""
     draft = ai.structured(
         system=SYSTEM_PLANNER, prompt=refine_prompt(event, skeleton, instruction, today), schema=SkeletonDraft
     )
@@ -57,6 +67,11 @@ def refine_skeleton(
 
 
 def extract_json(text: str) -> dict:
+    """The first JSON object in model text (a ```json fence, or the outermost braces).
+
+    Raises:
+        ValueError: if there is no JSON object.
+    """
     fenced = re.search(r"```json\s*(.*?)```", text, re.DOTALL)
     candidate = fenced.group(1) if fenced else text[text.find("{") : text.rfind("}") + 1]
     data = json.loads(candidate)  # JSONDecodeError is a ValueError
@@ -82,6 +97,7 @@ def _vendor_item(raw: object, n_sources: int) -> VendorItem | None:
 
 
 def find_vendors(ai: AIClient, event: EventInput, category_keys: list[str]) -> VendorResponse:
+    """Real local vendors for the given categories, or a fallback message if none can be found safely."""
     try:
         grounded = ai.grounded(system=SYSTEM_PLANNER, prompt=vendors_prompt(event, category_keys))
         raw_items = extract_json(grounded.text).get("vendors")
@@ -102,6 +118,7 @@ def find_vendors(ai: AIClient, event: EventInput, category_keys: list[str]) -> V
 
 
 def photo_ideas(ai: AIClient, event: EventInput, image: bytes, mime: str) -> list[PhotoIdea]:
+    """Decor ideas with colour palettes from an inspiration photo. Raises AIUnavailable if none are usable."""
     draft = ai.vision(system=SYSTEM_PLANNER, prompt=photo_prompt(event), image=image, mime=mime, schema=PhotoIdeasDraft)
     ideas = []
     for d in draft.ideas:

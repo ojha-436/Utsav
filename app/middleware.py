@@ -32,10 +32,12 @@ class BodyLimitMiddleware:
     """Counts body bytes as they arrive, so chunked requests without Content-Length can't exceed the limit."""
 
     def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+        """Wraps `app`, allowing at most `max_bytes` of request body."""
         self.app = app
         self.max_bytes = max_bytes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Passes the request on with a byte-counting receive; raises 413 once the limit is passed."""
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -54,6 +56,7 @@ class BodyLimitMiddleware:
 
 
 def install_middleware(app: FastAPI, max_body_bytes: int) -> None:
+    """Adds the body limit and the guard that sets security headers, request ids and logs."""
     # Added first so it sits inside the guard: routes read the counting receive directly.
     app.add_middleware(BodyLimitMiddleware, max_bytes=max_body_bytes)
 

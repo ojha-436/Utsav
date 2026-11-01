@@ -14,6 +14,7 @@ def completion_pct(item_ids: list[str], done_ids: set[str]) -> int:
 
 
 def spend_tracking(lines: list[BudgetLine], spend: list[SpendEntry]) -> Tracking:
+    """Planned versus actual spending per budget line, plus spend on removed categories."""
     actual: dict[str, int] = defaultdict(int)
     for entry in spend:
         actual[entry.category_key] += entry.amount

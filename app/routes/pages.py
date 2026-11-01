@@ -12,9 +12,11 @@ router = APIRouter(include_in_schema=False)
 
 @router.get("/")
 def landing() -> FileResponse:
+    """The landing page."""
     return FileResponse(STATIC_DIR / "index.html")
 
 
 @router.get("/app")
 def planner() -> FileResponse:
+    """The planner app page."""
     return FileResponse(STATIC_DIR / "app.html")

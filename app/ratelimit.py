@@ -15,6 +15,7 @@ class RateLimiter:
     """Allows `capacity` calls per `per_seconds` for each key, refilling continuously."""
 
     def __init__(self, capacity: int, per_seconds: float, clock: Callable[[], float] = time.monotonic) -> None:
+        """Allows `capacity` requests per `per_seconds`; `clock` is injectable for tests."""
         self._capacity = capacity
         self._per_seconds = per_seconds
         self._refill_per_second = capacity / per_seconds
@@ -23,6 +24,7 @@ class RateLimiter:
         self._lock = threading.Lock()
 
     def check(self, key: str) -> None:
+        """Takes one token for `key`. Raises RateLimited when none are left."""
         now = self._clock()
         with self._lock:
             if len(self._buckets) > _MAX_KEYS:

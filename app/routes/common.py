@@ -39,6 +39,7 @@ def record_plan(record: EventRecord, today: date) -> Plan:
 
 
 def to_response(record: EventRecord, today: date) -> EventResponse:
+    """The API response for a saved event."""
     return EventResponse(
         id=record.id,
         version=record.version,

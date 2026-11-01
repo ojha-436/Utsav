@@ -6,6 +6,7 @@ from app.models import ItemStatus, ScheduledTask, ScheduledVendor, Task, Vendor
 
 
 def vendor_item_id(category_key: str) -> str:
+    """The checklist id of a vendor booking, e.g. "vendor-catering"."""
     return f"vendor-{category_key}"
 
 
@@ -21,6 +22,7 @@ def _place(original: date, today: date, done: bool) -> tuple[date, ItemStatus]:
 
 
 def schedule_tasks(event_date: date, tasks: list[Task], today: date, done_ids: set[str]) -> list[ScheduledTask]:
+    """Tasks with real due dates, in date order. Open overdue tasks move to today."""
     scheduled = []
     for task in tasks:
         original = event_date - timedelta(days=task.days_before)
@@ -39,6 +41,7 @@ def schedule_tasks(event_date: date, tasks: list[Task], today: date, done_ids: s
 
 
 def schedule_vendors(event_date: date, vendors: list[Vendor], today: date, done_ids: set[str]) -> list[ScheduledVendor]:
+    """Vendor bookings with real book-by dates, in date order. Open overdue ones move to today."""
     scheduled = []
     for vendor in vendors:
         item_id = vendor_item_id(vendor.category_key)

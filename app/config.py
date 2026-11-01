@@ -1,3 +1,5 @@
+"""Runtime settings, read from environment variables."""
+
 from typing import Literal
 
 from pydantic_settings import BaseSettings

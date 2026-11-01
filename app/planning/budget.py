@@ -22,6 +22,14 @@ def _largest_remainder(total: int, categories: list[BudgetCategory]) -> dict[str
 
 
 def allocate(total: int, categories: list[BudgetCategory], guest_count: int, event_type: EventType) -> Budget:
+    """Splits `total` across categories in whole rupees.
+
+    The lines always sum exactly to `total`, and the contingency line gets at least 5 %.
+    A warning is added when the per-guest budget is below a realistic floor for the event type.
+
+    Raises:
+        ValueError: if there is no contingency category.
+    """
     contingency = next((c for c in categories if c.key == CONTINGENCY_KEY), None)
     if contingency is None:
         raise ValueError("categories must include a contingency line")

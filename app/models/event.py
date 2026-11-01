@@ -14,6 +14,8 @@ LATEST_EVENT_DATE = date(2100, 12, 31)
 
 
 class EventInput(Strict):
+    """The details the user enters in the wizard."""
+
     event_type: EventType
     event_date: date = Field(ge=EARLIEST_EVENT_DATE, le=LATEST_EVENT_DATE)
     guest_count: int = Field(ge=1, le=5000)

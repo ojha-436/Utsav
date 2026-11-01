@@ -34,6 +34,7 @@ class SkeletonInvalid(ValueError):
 
 
 def slugify(text: str, max_len: int = 40) -> str:
+    """A lowercase, hyphenated id of at most `max_len` characters ("item" if nothing is left)."""
     slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:max_len].strip("-")
     return slug or "item"
 
@@ -143,6 +144,14 @@ def _ideas(draft: SkeletonDraft) -> list[Idea]:
 
 
 def sanitize_skeleton(draft: SkeletonDraft) -> PlanSkeleton:
+    """Repairs Gemini's draft into a valid PlanSkeleton.
+
+    Normalises ids, clamps numbers, drops duplicates, remaps unknown categories to
+    "other" and guarantees a contingency category.
+
+    Raises:
+        SkeletonInvalid: if too few categories, tasks or ideas are left to make a plan.
+    """
     categories = _categories(draft)
     known = {c.key for c in categories}
     tasks = _tasks(draft, known)

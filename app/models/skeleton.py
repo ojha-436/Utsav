@@ -13,6 +13,8 @@ from app.models.common import IdeaKind, Slug, Strict
 
 
 class BudgetCategory(Strict):
+    """A budget category with a relative weight (rupees are computed later)."""
+
     key: Slug
     label: str = Field(min_length=1, max_length=60)
     weight: int = Field(ge=1, le=100)
@@ -21,6 +23,8 @@ class BudgetCategory(Strict):
 
 
 class Task(Strict):
+    """A task due `days_before` the event (negative means after it)."""
+
     id: Slug
     title: str = Field(min_length=1, max_length=100)
     category_key: Slug
@@ -28,6 +32,8 @@ class Task(Strict):
 
 
 class Vendor(Strict):
+    """A vendor type to book, when to book it and what to ask."""
+
     category_key: Slug
     role: str = Field(min_length=1, max_length=60)
     questions_to_ask: list[Annotated[str, StringConstraints(min_length=1, max_length=120)]] = Field(
@@ -37,12 +43,16 @@ class Vendor(Strict):
 
 
 class Idea(Strict):
+    """A personalised idea for the event."""
+
     title: str = Field(min_length=1, max_length=80)
     description: str = Field(min_length=1, max_length=300)
     kind: IdeaKind
 
 
 class PlanSkeleton(Strict):
+    """The validated plan skeleton. Ids and keys are unique within each list."""
+
     title: str = Field(min_length=1, max_length=80)
     summary: str = Field(max_length=400)
     budget_categories: list[BudgetCategory] = Field(min_length=3, max_length=14)
@@ -66,10 +76,14 @@ class PlanSkeleton(Strict):
 
 
 class Draft(BaseModel):
+    """Base for Gemini's response models: plain types, extra fields ignored."""
+
     model_config = ConfigDict(extra="ignore")
 
 
 class BudgetCategoryDraft(Draft):
+    """Unvalidated BudgetCategory."""
+
     key: str
     label: str
     weight: int
@@ -78,6 +92,8 @@ class BudgetCategoryDraft(Draft):
 
 
 class TaskDraft(Draft):
+    """Unvalidated Task."""
+
     id: str
     title: str
     category_key: str
@@ -85,6 +101,8 @@ class TaskDraft(Draft):
 
 
 class VendorDraft(Draft):
+    """Unvalidated Vendor."""
+
     category_key: str
     role: str
     questions_to_ask: list[str]
@@ -92,12 +110,16 @@ class VendorDraft(Draft):
 
 
 class IdeaDraft(Draft):
+    """Unvalidated Idea."""
+
     title: str
     description: str
     kind: str
 
 
 class SkeletonDraft(Draft):
+    """Gemini's response schema; repaired into a PlanSkeleton by planning.sanitize."""
+
     title: str
     summary: str
     budget_categories: list[BudgetCategoryDraft]

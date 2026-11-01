@@ -180,4 +180,5 @@ _DEFAULTS: dict[str, PlanSkeleton] = {"wedding": _WEDDING, "birthday": _BIRTHDAY
 
 
 def default_skeleton(event_type: EventType) -> PlanSkeleton:
+    """A copy of the built-in plan for `event_type`, used when Gemini is unavailable."""
     return _DEFAULTS[event_type].model_copy(deep=True)

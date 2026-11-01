@@ -11,10 +11,13 @@ _HTTP_CODES = {404: "not_found", 405: "method_not_allowed", 413: "payload_too_la
 
 
 def error_response(status: int, code: str, message: str) -> JSONResponse:
+    """A JSON error response in the app's single error shape."""
     return JSONResponse({"error": {"code": code, "message": message}}, status_code=status)
 
 
 def install_error_handlers(app: FastAPI) -> None:
+    """Registers handlers that turn every error into that shape, without echoing user input."""
+
     @app.exception_handler(AppError)
     def app_error(_request: Request, exc: AppError) -> JSONResponse:
         return error_response(exc.status, exc.code, exc.message)

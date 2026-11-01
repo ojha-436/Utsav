@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/events")
 
 @router.get("", response_model=list[EventSummary])
 def list_events(uid: UserDep, store: StoreDep) -> list[EventSummary]:
+    """The signed-in user's events, most recently updated first."""
     return [
         EventSummary(
             id=r.id,
@@ -27,12 +28,14 @@ def list_events(uid: UserDep, store: StoreDep) -> list[EventSummary]:
 
 @router.post("", status_code=201, response_model=EventResponse)
 def create_event(body: CreateEventRequest, uid: UserDep, store: StoreDep, today: TodayDep) -> EventResponse:
+    """Saves a plan; the event date must be in the future."""
     validate_event_date(body.input.event_date, today)
     return to_response(store.create(uid, body.input, body.skeleton, body.generated_from), today)
 
 
 @router.get("/{event_id}", response_model=EventResponse)
 def get_event(event_id: EventIdDep, uid: UserDep, store: StoreDep, today: TodayDep) -> EventResponse:
+    """One saved event with its plan recomputed for today."""
     return to_response(store.get(uid, event_id), today)
 
 
@@ -58,5 +61,6 @@ def update_event(
 
 @router.delete("/{event_id}", status_code=204)
 def delete_event(event_id: EventIdDep, uid: UserDep, store: StoreDep) -> Response:
+    """Deletes a saved event."""
     store.delete(uid, event_id)
     return Response(status_code=204)

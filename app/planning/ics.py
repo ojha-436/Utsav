@@ -11,7 +11,7 @@ _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")  # keeps \t and \n
 
 
 def _escape(text: str) -> str:
-    """RFC 5545 TEXT escaping. Every line-break form becomes \\n; other control characters are dropped."""
+    r"""RFC 5545 TEXT escaping. Every line-break form becomes \\n; other control characters are dropped."""
     text = _CONTROL.sub("", _NEWLINES.sub("\n", text))
     return text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
 
@@ -44,6 +44,7 @@ def _vevent(uid: str, summary: str, day: date, stamp: str) -> list[str]:
 def build_calendar(
     event: EventInput, title: str, tasks: list[ScheduledTask], vendors: list[ScheduledVendor], now: datetime
 ) -> str:
+    """An RFC 5545 calendar: the event day plus every open task and vendor booking, as all-day events."""
     stamp = now.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
     suffix = f"{event.event_date.isoformat()}@utsav"
     lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Utsav//Event Planner//EN", "CALSCALE:GREGORIAN"]

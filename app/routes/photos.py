@@ -35,6 +35,7 @@ def add_photo_ideas(
     today: TodayDep,
     image: UploadFile = File(...),
 ) -> EventResponse:
+    """Adds decor ideas from an uploaded inspiration photo (JPEG, PNG or WebP, at most 5 MB)."""
     # Limit and ownership are checked before the upload is read or Gemini is called.
     request.app.state.photo_limiter.check(uid)
     record = store.get(uid, event_id)

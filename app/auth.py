@@ -12,6 +12,8 @@ _init_lock = threading.Lock()
 
 
 def firebase_verifier(project_id: str) -> Callable[[str], str]:
+    """A function that verifies a Firebase ID token and returns its uid (or raises Unauthorized)."""
+
     def verify(token: str) -> str:
         import firebase_admin
         from firebase_admin import auth
@@ -40,6 +42,7 @@ def optional_user(request: Request, authorization: str | None = Header(default=N
 
 
 def require_user(uid: str | None = Depends(optional_user)) -> str:
+    """The signed-in user's uid; raises Unauthorized for guests."""
     if uid is None:
         raise Unauthorized("Sign in required")
     return uid

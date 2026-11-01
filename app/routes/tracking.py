@@ -41,6 +41,8 @@ def toggle_item(
 def add_spend(
     body: SpendCreate, event_id: EventIdDep, uid: UserDep, store: StoreDep, today: TodayDep, now: NowDep
 ) -> EventResponse:
+    """Logs spending against one of the plan's budget categories."""
+
     def apply(record: EventRecord) -> None:
         if body.category_key not in {c.key for c in ensure_contingency(record.skeleton.budget_categories)}:
             raise InvalidInput("Pick one of this plan's budget categories")
@@ -55,6 +57,8 @@ def add_spend(
 
 @router.delete("/{event_id}/spend/{entry_id}", response_model=EventResponse)
 def delete_spend(entry_id: str, event_id: EventIdDep, uid: UserDep, store: StoreDep, today: TodayDep) -> EventResponse:
+    """Removes a spend entry."""
+
     def apply(record: EventRecord) -> None:
         remaining = [entry for entry in record.spend if entry.id != entry_id]
         if len(remaining) == len(record.spend):
