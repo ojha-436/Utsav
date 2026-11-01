@@ -19,8 +19,9 @@ def gen(c, **kw):
 
 def test_generate_ok(make_client):
     r = gen(make_client(ai=FakeAI(structured=SkeletonDraft(**skeleton_dict()))))
-    assert r.status_code == 200 and r.json()["plan"]["generated_from"] == "ai"
-    assert sum(l["amount"] for l in r.json()["plan"]["budget"]["lines"]) == 1_200_000
+    assert r.status_code == 200
+    assert r.json()["plan"]["generated_from"] == "ai"
+    assert sum(line["amount"] for line in r.json()["plan"]["budget"]["lines"]) == 1_200_000
 
 
 def test_generate_rejects_today(make_client):
@@ -32,14 +33,18 @@ def test_generate_default_when_ai_down(make_client):
 
 
 def refine(c, **body):
-    return c.post("/api/plans/refine", json={"input": event_input(), "skeleton": skeleton_dict(), "instruction": "add a DJ"} | body)
+    return c.post(
+        "/api/plans/refine",
+        json={"input": event_input(), "skeleton": skeleton_dict(), "instruction": "add a DJ"} | body,
+    )
 
 
 def test_refine_ok_and_502(make_client):
     ok = refine(make_client(ai=FakeAI(structured=SkeletonDraft(**skeleton_dict(title="With DJ")))))
     assert ok.json()["skeleton"]["title"] == "With DJ"
     r = refine(make_client(ai=FakeAI(structured=AIUnavailable("x"))))
-    assert r.status_code == 502 and r.json()["error"]["code"] == "ai_unavailable"
+    assert r.status_code == 502
+    assert r.json()["error"]["code"] == "ai_unavailable"
 
 
 @pytest.mark.parametrize("instruction", ["", "x" * 301])
@@ -64,13 +69,16 @@ def test_script_text_returned_verbatim(make_client):
 def test_ai_endpoints_rate_limited(make_client):
     c = make_client()
     codes = [gen(c).status_code for _ in range(11)]
-    assert codes[:10] == [200] * 10 and codes[10] == 429
+    assert codes[:10] == [200] * 10
+    assert codes[10] == 429
 
 
 def test_calendar_endpoint(client):
     r = client.post("/api/calendar.ics", json={"input": event_input(), "skeleton": skeleton_dict()})
-    assert r.status_code == 200 and r.headers["content-type"].startswith("text/calendar")
-    assert 'filename="utsav-plan.ics"' in r.headers["content-disposition"] and "BEGIN:VEVENT" in r.text
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/calendar")
+    assert 'filename="utsav-plan.ics"' in r.headers["content-disposition"]
+    assert "BEGIN:VEVENT" in r.text
 
 
 def test_calendar_rejects_tampered_skeleton(client):
@@ -78,11 +86,13 @@ def test_calendar_rejects_tampered_skeleton(client):
     assert r.status_code == 422
 
 
-
-@pytest.mark.parametrize("path,extra", [("/api/plans/refine", {"instruction": "add a DJ"}), ("/api/calendar.ics", {})])
+@pytest.mark.parametrize(
+    ("path", "extra"), [("/api/plans/refine", {"instruction": "add a DJ"}), ("/api/calendar.ics", {})]
+)
 @pytest.mark.parametrize("bad_date", ["0001-01-01", "9999-12-31"])
 def test_extreme_event_dates_are_422_not_500(make_client, path, extra, bad_date):
     ai = FakeAI(structured=SkeletonDraft(**skeleton_dict()))
     body = {"input": event_input(event_date=bad_date), "skeleton": skeleton_dict()} | extra
     r = make_client(ai=ai).post(path, json=body)
-    assert r.status_code == 422 and ai.calls == []
+    assert r.status_code == 422
+    assert ai.calls == []

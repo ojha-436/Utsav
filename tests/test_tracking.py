@@ -11,7 +11,8 @@ def entry(key, amount):
 def test_completion_pct_ignores_orphans():
     assert completion_pct(["a", "b", "c", "vendor-x"], {"a", "b", "ghost"}) == 50
     assert completion_pct([], {"a"}) == 0
-    assert completion_pct(["a", "b", "c"], {"a"}) == 33 and completion_pct(["a", "b", "c"], {"a", "b"}) == 67
+    assert completion_pct(["a", "b", "c"], {"a"}) == 33
+    assert completion_pct(["a", "b", "c"], {"a", "b"}) == 67
 
 
 def test_spend_variance_and_other_bucket():
@@ -21,5 +22,6 @@ def test_spend_variance_and_other_bucket():
     ]
     spend = [entry("venue", 100_000), entry("venue", 250_000), entry("sangeet", 40_000)]
     tr = spend_tracking(lines, spend)
-    assert [(l.key, l.actual, l.variance) for l in tr.lines] == [("venue", 350_000, -50_000), ("catering", 0, 420_000)]
+    expected = [("venue", 350_000, -50_000), ("catering", 0, 420_000)]
+    assert [(line.key, line.actual, line.variance) for line in tr.lines] == expected
     assert tr.other_actual == 40_000

@@ -17,7 +17,8 @@ def new(s):
 def test_scoped_crud():
     s = InMemoryEventStore()
     r = new(s)
-    assert s.get("u1", r.id).version == 1 and s.list("u2") == []
+    assert s.get("u1", r.id).version == 1
+    assert s.list("u2") == []
     with pytest.raises(NotFound):
         s.get("u2", r.id)
     s.delete("u1", r.id)
@@ -32,7 +33,8 @@ def test_update_mutates_atomically_and_returns_copies():
     s.get("u1", r.id).progress.clear()
     t[0] = datetime(2026, 11, 2, tzinfo=UTC)
     updated = s.update("u1", r.id, lambda rec: rec.progress.__setitem__("book-venue", t[0]))
-    assert "book-venue" in updated.progress and s.get("u1", r.id).updated_at == t[0]
+    assert "book-venue" in updated.progress
+    assert s.get("u1", r.id).updated_at == t[0]
     updated.progress.clear()
     assert "book-venue" in s.get("u1", r.id).progress
 
@@ -69,6 +71,7 @@ def test_concurrent_updates_are_not_lost():
         def mutate(rec):
             time.sleep(0.002)
             rec.progress[f"task-{i}"] = datetime(2026, 11, 1, tzinfo=UTC)
+
         s.update("u1", r.id, mutate)
 
     threads = [threading.Thread(target=tick, args=(i,)) for i in range(20)]
@@ -114,6 +117,7 @@ def test_firestore_contention_is_a_409_not_a_500(monkeypatch):
     def always_contended(_fn):
         def run(_transaction):
             raise ValueError("Failed to commit transaction in 15 attempts.")
+
         return run
 
     monkeypatch.setattr(firestore, "transactional", always_contended)

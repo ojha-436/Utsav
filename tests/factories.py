@@ -1,4 +1,5 @@
 """Shared test data. Plain dicts so tests can tweak them before validation."""
+
 from datetime import date
 
 from app.config import Settings
@@ -10,7 +11,13 @@ def safe_settings(**overrides) -> Settings:
     """Settings that can never reach a real model or database."""
     return Settings(store="memory", gemini_api_key="", use_vertexai=False, **overrides)
 
-_CATEGORIES = [("venue", "Venue", 25), ("catering", "Catering", 35), ("decor", "Decor", 30), ("contingency", "Contingency", 10)]
+
+_CATEGORIES = [
+    ("venue", "Venue", 25),
+    ("catering", "Catering", 35),
+    ("decor", "Decor", 30),
+    ("contingency", "Contingency", 10),
+]
 _TASK_KEYS = ["venue", "catering", "decor"]
 
 
@@ -35,7 +42,12 @@ def skeleton_dict(n_tasks: int = 8, drop_contingency: bool = False, **overrides)
     ]
     tasks = [{"id": "book-venue", "title": "Book the venue", "category_key": "venue", "days_before": 180}]
     tasks += [
-        {"id": f"task-{i}", "title": f"Task {i}", "category_key": _TASK_KEYS[i % 3], "days_before": max(7, 180 - i * 20)}
+        {
+            "id": f"task-{i}",
+            "title": f"Task {i}",
+            "category_key": _TASK_KEYS[i % 3],
+            "days_before": max(7, 180 - i * 20),
+        }
         for i in range(1, n_tasks)
     ]
     base = {
@@ -44,8 +56,18 @@ def skeleton_dict(n_tasks: int = 8, drop_contingency: bool = False, **overrides)
         "budget_categories": categories,
         "tasks": tasks,
         "vendors": [
-            {"category_key": "venue", "role": "Venue manager", "questions_to_ask": ["Is our date free?"], "book_by_days_before": 150},
-            {"category_key": "catering", "role": "Caterer", "questions_to_ask": ["Can we book a tasting?", "Per-plate price?"], "book_by_days_before": 120},
+            {
+                "category_key": "venue",
+                "role": "Venue manager",
+                "questions_to_ask": ["Is our date free?"],
+                "book_by_days_before": 150,
+            },
+            {
+                "category_key": "catering",
+                "role": "Caterer",
+                "questions_to_ask": ["Can we book a tasting?", "Per-plate price?"],
+                "book_by_days_before": 120,
+            },
         ],
         "ideas": [
             {"title": "Marigold mandap", "description": "Fresh marigold strings around the mandap.", "kind": "decor"},

@@ -8,11 +8,21 @@ from app.models import EventInput, PlanSkeleton, SkeletonDraft, validate_event_d
 from tests.factories import TODAY, event_input, skeleton_dict
 
 
-@pytest.mark.parametrize("field,value", [
-    ("guest_count", 0), ("guest_count", 5001), ("budget_inr", 999), ("budget_inr", 100_000_001),
-    ("city", "J"), ("city", "x" * 81), ("notes", "x" * 501), ("vibe", ["grand"] * 6),
-    ("vibe", ["disco"]), ("event_type", "funeral"),
-])
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("guest_count", 0),
+        ("guest_count", 5001),
+        ("budget_inr", 999),
+        ("budget_inr", 100_000_001),
+        ("city", "J"),
+        ("city", "x" * 81),
+        ("notes", "x" * 501),
+        ("vibe", ["grand"] * 6),
+        ("vibe", ["disco"]),
+        ("event_type", "funeral"),
+    ],
+)
 def test_event_input_rejects_out_of_bounds(field, value):
     with pytest.raises(ValidationError):
         EventInput(**event_input(**{field: value}))
@@ -24,7 +34,7 @@ def test_event_input_valid_and_forbids_extra():
         EventInput(**event_input(uid="u2"))
 
 
-@pytest.mark.parametrize("delta,ok", [(0, False), (1, True), (1096, True), (1097, False)])
+@pytest.mark.parametrize(("delta", "ok"), [(0, False), (1, True), (1096, True), (1097, False)])
 def test_validate_event_date_window(delta, ok):
     def call():
         validate_event_date(TODAY + timedelta(days=delta), TODAY)
@@ -56,7 +66,9 @@ def test_draft_accepts_unbounded_values():
     assert len(SkeletonDraft(**s).tasks) == 50
 
 
-@pytest.mark.parametrize("section,field", [("budget_categories", "key"), ("tasks", "id"), ("vendors", "category_key")])
+@pytest.mark.parametrize(
+    ("section", "field"), [("budget_categories", "key"), ("tasks", "id"), ("vendors", "category_key")]
+)
 def test_skeleton_rejects_duplicate_keys(section, field):
     s = skeleton_dict()
     s[section][1][field] = s[section][0][field]

@@ -1,14 +1,21 @@
 """Saved events, scoped per user: planner_users/{uid}/events/{eventId}."""
+
 import threading
 import uuid
-from datetime import UTC, datetime
 from collections.abc import Callable
-from typing import Protocol
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Protocol
 
 from pydantic import BaseModel, Field
 
 from app.errors import Conflict, NotFound
+
+if TYPE_CHECKING:  # imported lazily at runtime so tests never need Google libraries loaded
+    from google.cloud import firestore
+
 from app.models import EventInput, PhotoIdea, PlanSkeleton, PlanSource, Source, SpendEntry, VendorItem
+
+Clock = Callable[[], datetime]
 
 
 def utc_now() -> datetime:
@@ -39,7 +46,9 @@ class EventRecord(BaseModel):
 class EventStore(Protocol):
     def list(self, uid: str) -> list[EventRecord]: ...
 
-    def create(self, uid: str, input: EventInput, skeleton: PlanSkeleton, generated_from: PlanSource) -> EventRecord: ...
+    def create(
+        self, uid: str, input: EventInput, skeleton: PlanSkeleton, generated_from: PlanSource
+    ) -> EventRecord: ...
 
     def get(self, uid: str, event_id: str) -> EventRecord: ...
 
@@ -61,7 +70,7 @@ def _not_found() -> NotFound:
 class InMemoryEventStore:
     """For local development and tests. Hands out copies so callers can't mutate stored state."""
 
-    def __init__(self, clock=utc_now):
+    def __init__(self, clock: Clock = utc_now) -> None:
         self._clock = clock
         self._records: dict[tuple[str, str], EventRecord] = {}
         self._lock = threading.Lock()
@@ -73,8 +82,14 @@ class InMemoryEventStore:
 
     def create(self, uid: str, input: EventInput, skeleton: PlanSkeleton, generated_from: PlanSource) -> EventRecord:
         now = self._clock()
-        record = EventRecord(id=uuid.uuid4().hex, input=input, skeleton=skeleton, generated_from=generated_from,
-                             created_at=now, updated_at=now)
+        record = EventRecord(
+            id=uuid.uuid4().hex,
+            input=input,
+            skeleton=skeleton,
+            generated_from=generated_from,
+            created_at=now,
+            updated_at=now,
+        )
         with self._lock:
             self._records[(uid, record.id)] = record.model_copy(deep=True)
         return record
@@ -104,11 +119,13 @@ class InMemoryEventStore:
 
 
 class FirestoreEventStore:
-    def __init__(self, client, clock=utc_now):
+    """Production store: planner_users/{uid}/events/{eventId}; writes are transactional."""
+
+    def __init__(self, client: "firestore.Client", clock: Clock = utc_now) -> None:
         self._client = client
         self._clock = clock
 
-    def _events(self, uid: str):
+    def _events(self, uid: str) -> "firestore.CollectionReference":
         return self._client.collection("planner_users").document(uid).collection("events")
 
     def list(self, uid: str) -> list[EventRecord]:
@@ -118,8 +135,9 @@ class FirestoreEventStore:
     def create(self, uid: str, input: EventInput, skeleton: PlanSkeleton, generated_from: PlanSource) -> EventRecord:
         ref = self._events(uid).document()
         now = self._clock()
-        record = EventRecord(id=ref.id, input=input, skeleton=skeleton, generated_from=generated_from,
-                             created_at=now, updated_at=now)
+        record = EventRecord(
+            id=ref.id, input=input, skeleton=skeleton, generated_from=generated_from, created_at=now, updated_at=now
+        )
         ref.set(record.model_dump(mode="json"))
         return record
 
@@ -135,7 +153,7 @@ class FirestoreEventStore:
         ref = self._events(uid).document(event_id)
 
         @firestore.transactional
-        def run(transaction) -> EventRecord:
+        def run(transaction: "firestore.Transaction") -> EventRecord:
             snapshot = ref.get(transaction=transaction)
             if not snapshot.exists:  # never recreate a deleted event
                 raise _not_found()

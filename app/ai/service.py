@@ -1,4 +1,5 @@
 """AI features: prompt → Gemini → sanitise, with graceful degradation."""
+
 import json
 import logging
 import re
@@ -16,7 +17,9 @@ from app.planning.sanitize import SkeletonInvalid, sanitize_skeleton
 
 log = logging.getLogger("utsav.ai")
 
-VENDOR_FALLBACK_MESSAGE = "Couldn't find local vendors right now — use the checklist questions when you contact vendors."
+VENDOR_FALLBACK_MESSAGE = (
+    "Couldn't find local vendors right now — use the checklist questions when you contact vendors."
+)
 MAX_VENDORS_PER_CATEGORY = 3
 MAX_PHOTO_IDEAS = 5
 _HEX = re.compile(r"#[0-9a-fA-F]{6}")
@@ -41,8 +44,12 @@ def generate_skeleton(ai: AIClient, event: EventInput, today: date) -> tuple[Pla
         return default_skeleton(event.event_type), "default"
 
 
-def refine_skeleton(ai: AIClient, event: EventInput, skeleton: PlanSkeleton, instruction: str, today: date) -> PlanSkeleton:
-    draft = ai.structured(system=SYSTEM_PLANNER, prompt=refine_prompt(event, skeleton, instruction, today), schema=SkeletonDraft)
+def refine_skeleton(
+    ai: AIClient, event: EventInput, skeleton: PlanSkeleton, instruction: str, today: date
+) -> PlanSkeleton:
+    draft = ai.structured(
+        system=SYSTEM_PLANNER, prompt=refine_prompt(event, skeleton, instruction, today), schema=SkeletonDraft
+    )
     try:
         return sanitize_skeleton(draft)
     except SkeletonInvalid as exc:
@@ -51,7 +58,7 @@ def refine_skeleton(ai: AIClient, event: EventInput, skeleton: PlanSkeleton, ins
 
 def extract_json(text: str) -> dict:
     fenced = re.search(r"```json\s*(.*?)```", text, re.DOTALL)
-    candidate = fenced.group(1) if fenced else text[text.find("{"): text.rfind("}") + 1]
+    candidate = fenced.group(1) if fenced else text[text.find("{") : text.rfind("}") + 1]
     data = json.loads(candidate)  # JSONDecodeError is a ValueError
     if not isinstance(data, dict):
         raise ValueError("expected a JSON object")

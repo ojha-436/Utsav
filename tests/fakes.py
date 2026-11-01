@@ -1,4 +1,5 @@
 """Test doubles for the AI boundary."""
+
 from app.errors import AIUnavailable
 
 

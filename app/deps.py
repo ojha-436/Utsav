@@ -1,8 +1,10 @@
 """FastAPI dependencies. Runtime objects live on app.state so tests can swap them."""
+
 from datetime import UTC, date, datetime
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Request
+from fastapi import Depends, Request
 
 from app.ai.client import AIClient
 from app.ratelimit import client_ip
@@ -12,6 +14,7 @@ IST = ZoneInfo("Asia/Kolkata")
 
 
 def today_in_ist(now: datetime) -> date:
+    """The calendar date in India at the given instant."""
     return now.astimezone(IST).date()
 
 
@@ -21,6 +24,7 @@ def get_today() -> date:
 
 
 def get_now() -> datetime:
+    """The current instant, timezone-aware (UTC)."""
     return datetime.now(UTC)
 
 
@@ -33,4 +37,12 @@ def get_store(request: Request) -> EventStore:
 
 
 def rate_limit_ai(request: Request) -> None:
+    """Applies the per-IP limit for the open AI endpoints."""
     request.app.state.ai_limiter.check(client_ip(request))
+
+
+# Annotated aliases keep route signatures short: `today: TodayDep`.
+TodayDep = Annotated[date, Depends(get_today)]
+NowDep = Annotated[datetime, Depends(get_now)]
+AIDep = Annotated[AIClient, Depends(get_ai)]
+StoreDep = Annotated[EventStore, Depends(get_store)]

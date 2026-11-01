@@ -4,6 +4,7 @@ The model is asked for well-formed output, but this module never trusts it:
 it normalises ids, clamps numbers, drops duplicates and guarantees the
 categories every later step relies on.
 """
+
 import re
 from typing import get_args
 
@@ -87,12 +88,14 @@ def _tasks(draft: SkeletonDraft, known: set[str]) -> list[Task]:
             continue
         seen.add(task_id)
         key = slugify(t.category_key)
-        tasks.append(Task(
-            id=task_id,
-            title=title,
-            category_key=key if key in known else OTHER_KEY,
-            days_before=_clamp(t.days_before, -30, 540),
-        ))
+        tasks.append(
+            Task(
+                id=task_id,
+                title=title,
+                category_key=key if key in known else OTHER_KEY,
+                days_before=_clamp(t.days_before, -30, 540),
+            )
+        )
         if len(tasks) == MAX_TASKS:
             break
     if len(tasks) < 5:
@@ -111,12 +114,14 @@ def _vendors(draft: SkeletonDraft, known: set[str]) -> list[Vendor]:
         if key in seen or not role or not questions:
             continue
         seen.add(key)
-        vendors.append(Vendor(
-            category_key=key,
-            role=role,
-            questions_to_ask=questions,
-            book_by_days_before=_clamp(v.book_by_days_before, 0, 540),
-        ))
+        vendors.append(
+            Vendor(
+                category_key=key,
+                role=role,
+                questions_to_ask=questions,
+                book_by_days_before=_clamp(v.book_by_days_before, 0, 540),
+            )
+        )
         if len(vendors) == MAX_VENDORS:
             break
     return vendors

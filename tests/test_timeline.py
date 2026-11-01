@@ -43,4 +43,8 @@ def test_vendor_book_by():
     v = Vendor(category_key="catering", role="Caterer", questions_to_ask=["Tasting?"], book_by_days_before=120)
     [x] = schedule_vendors(EVENT, [v], date(2026, 11, 1), set())
     assert (x.id, x.original_book_by, x.book_by, x.status) == (
-        "vendor-catering", date(2026, 10, 17), date(2026, 11, 1), "compressed")
+        "vendor-catering",
+        date(2026, 10, 17),
+        date(2026, 11, 1),
+        "compressed",
+    )

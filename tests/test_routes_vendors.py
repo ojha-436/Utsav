@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -10,11 +11,14 @@ from app.models import Source
 from tests.factories import AUTH_U1, AUTH_U2, event_input, skeleton_dict
 from tests.fakes import FakeAI
 
-VJSON = '```json\n{"vendors":[{"category_key":"catering","name":"Spice Route","why":"Rajasthani thali","source_index":0}]}\n```'
+VENDOR = {"category_key": "catering", "name": "Spice Route", "why": "Rajasthani thali", "source_index": 0}
+VJSON = "```json\n" + json.dumps({"vendors": [VENDOR]}) + "\n```"
 
 
 def vend(c, headers=None, **kw):
-    return c.post("/api/vendors", json={"input": event_input(), "category_keys": ["catering"]} | kw, headers=headers or {})
+    return c.post(
+        "/api/vendors", json={"input": event_input(), "category_keys": ["catering"]} | kw, headers=headers or {}
+    )
 
 
 def grounded_ai(n=5):
@@ -22,12 +26,15 @@ def grounded_ai(n=5):
 
 
 def save_event(c):
-    return c.post("/api/events", json={"input": event_input(), "skeleton": skeleton_dict()}, headers=AUTH_U1).json()["id"]
+    return c.post("/api/events", json={"input": event_input(), "skeleton": skeleton_dict()}, headers=AUTH_U1).json()[
+        "id"
+    ]
 
 
 def test_guest_vendors(make_client):
     r = vend(make_client(ai=grounded_ai())).json()
-    assert r["items"][0]["name"] == "Spice Route" and r["sources"][0]["uri"] == "https://a.in"
+    assert r["items"][0]["name"] == "Spice Route"
+    assert r["sources"][0]["uri"] == "https://a.in"
 
 
 def test_vendor_failure_message(make_client):
@@ -68,7 +75,9 @@ def test_cache_cleared_when_event_input_changes(make_client):
     c = make_client(ai=ai)
     eid = save_event(c)
     vend(c, AUTH_U1, event_id=eid)
-    c.put(f"/api/events/{eid}", json={"input": event_input(city="Udaipur"), "skeleton": skeleton_dict()}, headers=AUTH_U1)
+    c.put(
+        f"/api/events/{eid}", json={"input": event_input(city="Udaipur"), "skeleton": skeleton_dict()}, headers=AUTH_U1
+    )
     vend(c, AUTH_U1, event_id=eid, input=event_input(city="Udaipur"))
     assert len(ai.calls) == 2
 
@@ -76,19 +85,22 @@ def test_cache_cleared_when_event_input_changes(make_client):
 def test_event_id_access(make_client):
     c = make_client(ai=grounded_ai())
     eid = save_event(c)
-    assert vend(c, event_id=eid).status_code == 401 and vend(c, AUTH_U2, event_id=eid).status_code == 404
-
+    assert vend(c, event_id=eid).status_code == 401
+    assert vend(c, AUTH_U2, event_id=eid).status_code == 404
 
 
 def test_vendor_cache_write_keeps_changes_made_during_the_search(make_client):
     holder = {}
 
     def search_while_user_ticks(_kwargs):
-        holder["store"].update("u1", holder["eid"], lambda rec: rec.progress.__setitem__("book-venue", datetime(2026, 11, 1, tzinfo=UTC)))
+        holder["store"].update(
+            "u1", holder["eid"], lambda rec: rec.progress.__setitem__("book-venue", datetime(2026, 11, 1, tzinfo=UTC))
+        )
         return GroundedText(VJSON, [Source(title="A", uri="https://a.in")])
 
     c = make_client(ai=FakeAI(grounded=search_while_user_ticks))
     holder.update(store=c.app.state.store, eid=save_event(c))
     assert vend(c, AUTH_U1, event_id=holder["eid"]).json()["items"]
     record = c.app.state.store.get("u1", holder["eid"])
-    assert "book-venue" in record.progress and record.vendor_cache is not None
+    assert "book-venue" in record.progress
+    assert record.vendor_cache is not None

@@ -4,10 +4,12 @@ Owns timeouts, retry, the fallback model, JSON validation with one repair
 attempt, and extracting grounding sources. Prompts and user text are never
 logged.
 """
+
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Protocol, TypeVar
+from typing import Any, NoReturn, Protocol, TypeVar
 
 import httpx
 from google import genai
@@ -44,24 +46,34 @@ class AIClient(Protocol):
 
     def grounded(self, *, system: str, prompt: str, timeout_s: float = 45) -> GroundedText: ...
 
-    def vision(self, *, system: str, prompt: str, image: bytes, mime: str, schema: type[T], timeout_s: float = 30) -> T: ...
+    def vision(
+        self, *, system: str, prompt: str, image: bytes, mime: str, schema: type[T], timeout_s: float = 30
+    ) -> T: ...
 
 
 class NullAI:
     """Used when no Gemini credentials are configured; every call degrades gracefully upstream."""
 
-    def structured(self, **_):
+    def structured(self, **_: Any) -> NoReturn:
         raise AIUnavailable("AI is not configured")
 
-    def grounded(self, **_):
+    def grounded(self, **_: Any) -> NoReturn:
         raise AIUnavailable("AI is not configured")
 
-    def vision(self, **_):
+    def vision(self, **_: Any) -> NoReturn:
         raise AIUnavailable("AI is not configured")
 
 
 class GeminiClient:
-    def __init__(self, api_key: str, model: str, fallback_model: str, sdk=None, sleep=time.sleep):
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        fallback_model: str,
+        sdk: Any = None,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
+        """`sdk` is a `genai.Client` (or a test double); built from `api_key` when omitted."""
         self._sdk = sdk or genai.Client(api_key=api_key)
         self._attempts = (model, model, fallback_model)
         self._sleep = sleep
@@ -80,7 +92,9 @@ class GeminiClient:
         return GroundedText(text=resp.text or "", sources=sources, searched=bool(sources) or _ran_search(resp))
 
     @staticmethod
-    def _config(system: str, timeout_s: float, schema=None, tools=None) -> types.GenerateContentConfig:
+    def _config(
+        system: str, timeout_s: float, schema: type[BaseModel] | None = None, tools: list[types.Tool] | None = None
+    ) -> types.GenerateContentConfig:
         return types.GenerateContentConfig(
             system_instruction=system,
             http_options=types.HttpOptions(timeout=int(timeout_s * 1000)),
@@ -89,7 +103,7 @@ class GeminiClient:
             tools=tools,
         )
 
-    def _generate(self, contents: list, config: types.GenerateContentConfig):
+    def _generate(self, contents: list, config: types.GenerateContentConfig) -> types.GenerateContentResponse:
         for attempt, model in enumerate(self._attempts):
             if attempt == 1:
                 self._sleep(1.0)
@@ -117,7 +131,7 @@ class GeminiClient:
             raise AIUnavailable("The AI returned an unusable answer") from exc
 
 
-def _sources(resp) -> list[Source]:
+def _sources(resp: types.GenerateContentResponse) -> list[Source]:
     """Citation links come only from grounding metadata, never from model text."""
     try:
         chunks = resp.candidates[0].grounding_metadata.grounding_chunks or []
@@ -132,7 +146,7 @@ def _sources(resp) -> list[Source]:
     return sources
 
 
-def _ran_search(resp) -> bool:
+def _ran_search(resp: types.GenerateContentResponse) -> bool:
     """Gemini sometimes omits source chunks even after searching; the queries still show it searched."""
     try:
         return bool(resp.candidates[0].grounding_metadata.web_search_queries)

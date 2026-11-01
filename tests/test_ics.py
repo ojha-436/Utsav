@@ -15,9 +15,15 @@ def cal(title="Asha & Rohan's Wedding", done=frozenset()):
 
 def test_structure():
     c, p = cal()
-    assert c.startswith("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Utsav//Event Planner//EN\r\n") and c.endswith("END:VCALENDAR\r\n")
+    assert c.startswith("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Utsav//Event Planner//EN\r\n")
+    assert c.endswith("END:VCALENDAR\r\n")
     assert c.count("BEGIN:VEVENT") == 1 + len(p.timeline.tasks) + len(p.vendors)
-    for s in ("DTSTART;VALUE=DATE:20270214", "DTEND;VALUE=DATE:20270215", "DTSTAMP:20261101T063000Z", "UID:book-venue-2027-02-14@utsav"):
+    for s in (
+        "DTSTART;VALUE=DATE:20270214",
+        "DTEND;VALUE=DATE:20270215",
+        "DTSTAMP:20261101T063000Z",
+        "UID:book-venue-2027-02-14@utsav",
+    ):
         assert s in c
 
 
@@ -38,8 +44,8 @@ def test_folding_counts_octets_for_devanagari():
     assert f"SUMMARY:{title}" in c.replace("\r\n ", "")
 
 
-
 def test_lone_carriage_returns_and_control_chars_are_neutralised():
     c, _ = cal(title="Book DJ\rATTENDEE:evil\x07")
-    assert "\r" not in c.replace("\r\n", "") and "\x07" not in c
+    assert "\r" not in c.replace("\r\n", "")
+    assert "\x07" not in c
     assert "SUMMARY:Book DJ\\nATTENDEE:evil" in c.replace("\r\n ", "")

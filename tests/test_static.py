@@ -11,7 +11,8 @@ def test_pages_served(client):
 
 def test_static_assets_served(client):
     r = client.get("/static/js/main.js")
-    assert r.status_code == 200 and "javascript" in r.headers["content-type"]
+    assert r.status_code == 200
+    assert "javascript" in r.headers["content-type"]
 
 
 def test_no_html_injection_sinks_in_js():

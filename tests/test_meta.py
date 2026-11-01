@@ -1,6 +1,7 @@
 def test_healthz(client):
     r = client.get("/api/healthz")
-    assert r.status_code == 200 and r.json() == {"status": "ok"}
+    assert r.status_code == 200
+    assert r.json() == {"status": "ok"}
 
 
 def test_config_exposes_only_public_firebase_fields(client):

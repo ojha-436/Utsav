@@ -1,6 +1,8 @@
 """Firebase ID-token verification. The uid always comes from the verified token."""
+
 import threading
 from collections.abc import Callable
+from typing import Annotated
 
 from fastapi import Depends, Header, Request
 
@@ -41,3 +43,7 @@ def require_user(uid: str | None = Depends(optional_user)) -> str:
     if uid is None:
         raise Unauthorized("Sign in required")
     return uid
+
+
+OptionalUserDep = Annotated[str | None, Depends(optional_user)]
+UserDep = Annotated[str, Depends(require_user)]

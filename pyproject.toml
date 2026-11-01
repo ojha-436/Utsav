@@ -1,3 +1,19 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+# style, pyflakes, import order, naming, bugbear, pyupgrade, simplify, comprehensions, returns, pytest, annotations
+select = ["E", "W", "F", "I", "N", "B", "UP", "SIM", "C4", "RET", "PIE", "PT", "ANN"]
+ignore = [
+    "B008",  # FastAPI's File(...) default is idiomatic
+    "N818",  # domain errors are named for the HTTP outcome they produce (NotFound, RateLimited, ...)
+    "ANN401",  # Any is used deliberately for SDK handles and ignored keyword arguments
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PT011", "E731", "ANN"]

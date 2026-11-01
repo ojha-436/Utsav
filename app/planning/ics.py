@@ -1,4 +1,5 @@
 """RFC 5545 calendar export: the event day plus every open task and vendor booking."""
+
 import re
 from datetime import UTC, date, datetime, timedelta
 
@@ -40,8 +41,9 @@ def _vevent(uid: str, summary: str, day: date, stamp: str) -> list[str]:
     ]
 
 
-def build_calendar(event: EventInput, title: str, tasks: list[ScheduledTask],
-                   vendors: list[ScheduledVendor], now: datetime) -> str:
+def build_calendar(
+    event: EventInput, title: str, tasks: list[ScheduledTask], vendors: list[ScheduledVendor], now: datetime
+) -> str:
     stamp = now.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
     suffix = f"{event.event_date.isoformat()}@utsav"
     lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Utsav//Event Planner//EN", "CALSCALE:GREGORIAN"]

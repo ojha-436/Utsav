@@ -23,12 +23,15 @@ def auth_app_client():
     return TestClient(app, raise_server_exceptions=False)
 
 
-@pytest.mark.parametrize("headers,opt,req", [
-    ({}, 200, 401),
-    ({"Authorization": "Bearer u1"}, 200, 200),
-    ({"Authorization": "Bearer nope"}, 401, 401),
-    ({"Authorization": "Basic u1"}, 401, 401),
-])
+@pytest.mark.parametrize(
+    ("headers", "opt", "req"),
+    [
+        ({}, 200, 401),
+        ({"Authorization": "Bearer u1"}, 200, 200),
+        ({"Authorization": "Bearer nope"}, 401, 401),
+        ({"Authorization": "Basic u1"}, 401, 401),
+    ],
+)
 def test_auth_dependencies(auth_app_client, headers, opt, req):
     assert auth_app_client.get("/opt", headers=headers).status_code == opt
     assert auth_app_client.get("/req", headers=headers).status_code == req

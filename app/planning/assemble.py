@@ -1,4 +1,5 @@
 """Combine a skeleton with the event, today's date and saved progress into a Plan."""
+
 from collections.abc import Iterable
 from datetime import date
 
@@ -18,7 +19,9 @@ def assemble_plan(
     spend: list[SpendEntry] | None = None,
     photo_ideas: Iterable[PhotoIdea] = (),
 ) -> Plan:
-    budget = allocate(event.budget_inr, ensure_contingency(skeleton.budget_categories), event.guest_count, event.event_type)
+    budget = allocate(
+        event.budget_inr, ensure_contingency(skeleton.budget_categories), event.guest_count, event.event_type
+    )
     tasks = schedule_tasks(event.event_date, skeleton.tasks, today, done_ids)
     item_ids = [t.id for t in skeleton.tasks] + [vendor_item_id(v.category_key) for v in skeleton.vendors]
     return Plan(

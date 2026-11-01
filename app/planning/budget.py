@@ -1,4 +1,5 @@
 """Turn weighted budget categories into whole-rupee lines that sum exactly."""
+
 from fractions import Fraction
 
 from app.models import Budget, BudgetCategory, BudgetLine, EventType, PlanWarning
@@ -17,7 +18,7 @@ def _largest_remainder(total: int, categories: list[BudgetCategory]) -> dict[str
     by_remainder = sorted(range(len(categories)), key=lambda i: (-(exact[i] - floors[i]), i))
     for i in by_remainder[:leftover]:
         floors[i] += 1
-    return {c.key: amount for c, amount in zip(categories, floors)}
+    return {c.key: amount for c, amount in zip(categories, floors, strict=True)}
 
 
 def allocate(total: int, categories: list[BudgetCategory], guest_count: int, event_type: EventType) -> Budget:
@@ -47,8 +48,12 @@ def allocate(total: int, categories: list[BudgetCategory], guest_count: int, eve
     per_guest = round(total / guest_count)
     warnings = []
     if total < PER_GUEST_FLOOR[event_type] * guest_count:
-        warnings.append(PlanWarning(
-            code="low_per_guest",
-            message=f"₹{per_guest} per guest is tight for a {event_type}; consider fewer guests or a larger budget.",
-        ))
+        warnings.append(
+            PlanWarning(
+                code="low_per_guest",
+                message=(
+                    f"₹{per_guest} per guest is tight for a {event_type}; consider fewer guests or a larger budget."
+                ),
+            )
+        )
     return Budget(total=total, per_guest=per_guest, lines=lines, warnings=warnings)

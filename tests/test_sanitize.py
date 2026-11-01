@@ -7,7 +7,8 @@ from tests.factories import skeleton_dict
 
 def test_slugify():
     assert slugify("Mehendi & Sangeet!") == "mehendi-sangeet"
-    assert slugify("") == "item" and len(slugify("a" * 100)) == 40
+    assert slugify("") == "item"
+    assert len(slugify("a" * 100)) == 40
 
 
 def test_duplicates_keep_first_and_vendor_dedupe():
@@ -42,8 +43,10 @@ def test_clamps_and_truncates():
     d["tasks"][0]["days_before"] = 900
     d["tasks"][0]["title"] = "x" * 200
     s = sanitize_skeleton(SkeletonDraft(**d))
-    assert s.budget_categories[0].weight == 100 and len(s.tasks) == 40
-    assert s.tasks[0].days_before == 540 and len(s.tasks[0].title) == 100
+    assert s.budget_categories[0].weight == 100
+    assert len(s.tasks) == 40
+    assert s.tasks[0].days_before == 540
+    assert len(s.tasks[0].title) == 100
 
 
 def test_too_few_tasks_raises():

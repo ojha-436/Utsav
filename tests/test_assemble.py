@@ -14,7 +14,8 @@ def test_default_skeleton_valid_consistent_and_idempotent(et):
     s = default_skeleton(et)
     keys = {c.key for c in s.budget_categories}
     assert "contingency" in keys
-    assert all(t.category_key in keys for t in s.tasks) and all(v.category_key in keys for v in s.vendors)
+    assert all(t.category_key in keys for t in s.tasks)
+    assert all(v.category_key in keys for v in s.vendors)
     assert sanitize_skeleton(SkeletonDraft(**s.model_dump())) == s
 
 
@@ -24,14 +25,23 @@ def test_community_default_covers_permissions():
 
 def test_assemble_guest_plan():
     p = assemble_plan(EventInput(**event_input()), PlanSkeleton(**skeleton_dict()), TODAY)
-    assert p.tracking is None and p.photo_ideas == [] and p.generated_from == "ai"
-    assert sum(l.amount for l in p.budget.lines) == 1_200_000 and p.timeline.completion_pct == 0
+    assert p.tracking is None
+    assert p.photo_ideas == []
+    assert p.generated_from == "ai"
+    assert sum(line.amount for line in p.budget.lines) == 1_200_000
+    assert p.timeline.completion_pct == 0
 
 
 def test_assemble_with_progress_and_spend():
-    p = assemble_plan(EventInput(**event_input()), PlanSkeleton(**skeleton_dict()), TODAY,
-                      done_ids={"book-venue", "vendor-venue", "ghost"}, spend=[])
-    assert p.tracking is not None and p.timeline.completion_pct == 20  # 2 of 8 tasks + 2 vendors
+    p = assemble_plan(
+        EventInput(**event_input()),
+        PlanSkeleton(**skeleton_dict()),
+        TODAY,
+        done_ids={"book-venue", "vendor-venue", "ghost"},
+        spend=[],
+    )
+    assert p.tracking is not None
+    assert p.timeline.completion_pct == 20
 
 
 def test_assemble_short_notice():
@@ -46,4 +56,5 @@ def test_assemble_after_event_passed():
 
 def test_assemble_adds_contingency_when_client_skeleton_lacks_it():
     p = assemble_plan(EventInput(**event_input()), PlanSkeleton(**skeleton_dict(drop_contingency=True)), TODAY)
-    assert p.budget.lines[-1].key == "contingency" and sum(l.amount for l in p.budget.lines) == 1_200_000
+    assert p.budget.lines[-1].key == "contingency"
+    assert sum(line.amount for line in p.budget.lines) == 1_200_000

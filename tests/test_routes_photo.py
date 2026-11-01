@@ -16,7 +16,9 @@ IDEAS = PhotoIdeasDraft(ideas=[{"title": "Marigold arch", "description": "d", "p
 
 
 def save_event(c):
-    return c.post("/api/events", json={"input": event_input(), "skeleton": skeleton_dict()}, headers=AUTH_U1).json()["id"]
+    return c.post("/api/events", json={"input": event_input(), "skeleton": skeleton_dict()}, headers=AUTH_U1).json()[
+        "id"
+    ]
 
 
 def setup(make_client, n=1):
@@ -29,11 +31,12 @@ def upload(c, eid, data, ctype="image/jpeg", headers=AUTH_U1):
     return c.post(f"/api/events/{eid}/photo-ideas", files={"image": ("x.jpg", data, ctype)}, headers=headers)
 
 
-@pytest.mark.parametrize("data,mime", [(JPEG, "image/jpeg"), (PNG, "image/png"), (WEBP, "image/webp")])
+@pytest.mark.parametrize(("data", "mime"), [(JPEG, "image/jpeg"), (PNG, "image/png"), (WEBP, "image/webp")])
 def test_accepts_by_magic_bytes(make_client, data, mime):
     c, ai, eid = setup(make_client)
     r = upload(c, eid, data)
-    assert r.status_code == 200 and r.json()["plan"]["photo_ideas"][0]["title"] == "Marigold arch"
+    assert r.status_code == 200
+    assert r.json()["plan"]["photo_ideas"][0]["title"] == "Marigold arch"
     assert ai.calls[-1][1]["mime"] == mime
 
 
@@ -65,7 +68,6 @@ def test_ai_failure_502(make_client):
     assert upload(c, eid, JPEG).status_code == 502
 
 
-
 def test_photo_ideas_keep_spend_logged_during_the_upload(make_client):
     holder = {}
     entry = SpendEntry(id="s1", category_key="venue", amount=5000, at=datetime(2026, 11, 1, tzinfo=UTC))
@@ -77,5 +79,6 @@ def test_photo_ideas_keep_spend_logged_during_the_upload(make_client):
     c = make_client(ai=FakeAI(vision=read_photo_while_user_logs_spend))
     holder.update(store=c.app.state.store, eid=save_event(c))
     r = upload(c, holder["eid"], JPEG)
-    assert r.status_code == 200 and [e["id"] for e in r.json()["spend"]] == ["s1"]
+    assert r.status_code == 200
+    assert [e["id"] for e in r.json()["spend"]] == ["s1"]
     assert len(r.json()["plan"]["photo_ideas"]) == 1

@@ -1,6 +1,10 @@
 """In-memory token-bucket rate limiting (fine for a few Cloud Run instances)."""
+
 import threading
 import time
+from collections.abc import Callable
+
+from starlette.requests import Request
 
 from app.errors import RateLimited
 
@@ -8,7 +12,9 @@ _MAX_KEYS = 10_000
 
 
 class RateLimiter:
-    def __init__(self, capacity: int, per_seconds: float, clock=time.monotonic):
+    """Allows `capacity` calls per `per_seconds` for each key, refilling continuously."""
+
+    def __init__(self, capacity: int, per_seconds: float, clock: Callable[[], float] = time.monotonic) -> None:
         self._capacity = capacity
         self._per_seconds = per_seconds
         self._refill_per_second = capacity / per_seconds
@@ -29,7 +35,7 @@ class RateLimiter:
             self._buckets[key] = (tokens - 1, now)
 
 
-def client_ip(request) -> str:
+def client_ip(request: Request) -> str:
     """Cloud Run appends the real client IP as the last X-Forwarded-For entry."""
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:

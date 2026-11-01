@@ -20,7 +20,8 @@ def test_create_get_and_list(client):
     r = create(client)
     assert r.status_code == 201
     body = r.json()
-    assert body["version"] == 1 and body["plan"]["tracking"] is not None
+    assert body["version"] == 1
+    assert body["plan"]["tracking"] is not None
     assert client.get(f"/api/events/{body['id']}", headers=AUTH_U1).status_code == 200
     [summary] = client.get("/api/events", headers=AUTH_U1).json()
     assert set(summary) == {"id", "title", "event_type", "event_date", "updated_at"}
@@ -31,7 +32,11 @@ def test_create_rejects_today(client):
 
 
 def test_create_keeps_default_source(client):
-    r = client.post("/api/events", json={"input": event_input(), "skeleton": skeleton_dict(), "generated_from": "default"}, headers=AUTH_U1)
+    r = client.post(
+        "/api/events",
+        json={"input": event_input(), "skeleton": skeleton_dict(), "generated_from": "default"},
+        headers=AUTH_U1,
+    )
     assert r.json()["plan"]["generated_from"] == "default"
 
 
@@ -45,9 +50,12 @@ def test_cross_user_is_404(client):
 
 def test_put_bumps_version_and_keeps_progress(client):
     eid = create(client).json()["id"]
-    client.app.state.store.update("u1", eid, lambda rec: rec.progress.__setitem__("book-venue", datetime(2026, 11, 1, tzinfo=UTC)))
+    client.app.state.store.update(
+        "u1", eid, lambda rec: rec.progress.__setitem__("book-venue", datetime(2026, 11, 1, tzinfo=UTC))
+    )
     r = client.put(f"/api/events/{eid}", json={"skeleton": skeleton_dict(title="Renamed")}, headers=AUTH_U1).json()
-    assert r["version"] == 2 and r["plan"]["title"] == "Renamed"
+    assert r["version"] == 2
+    assert r["plan"]["title"] == "Renamed"
     assert next(t for t in r["plan"]["timeline"]["tasks"] if t["id"] == "book-venue")["status"] == "done"
 
 
@@ -69,7 +77,6 @@ def test_delete_and_bad_id(client):
     assert client.delete(f"/api/events/{eid}", headers=AUTH_U1).status_code == 204
     assert client.get(f"/api/events/{eid}", headers=AUTH_U1).status_code == 404
     assert client.get("/api/events/bad.id!", headers=AUTH_U1).status_code == 404
-
 
 
 @pytest.mark.parametrize("bad", ["__x__", "a_b", "a-b", "x" * 65, ""])

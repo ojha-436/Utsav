@@ -1,7 +1,9 @@
 """Structured JSON logs on stdout, which Cloud Logging parses into fields."""
+
 import json
 import logging
 import sys
+from typing import TextIO
 
 _FIELDS = ("request_id", "method", "path", "status", "latency_ms", "model", "reason")
 
@@ -19,11 +21,11 @@ class StdoutHandler(logging.StreamHandler):
     """Always writes to the current sys.stdout (so test capture sees it)."""
 
     @property
-    def stream(self):
+    def stream(self) -> TextIO:
         return sys.stdout
 
     @stream.setter
-    def stream(self, _value):
+    def stream(self, _value: TextIO) -> None:
         pass
 
 

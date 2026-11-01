@@ -24,7 +24,9 @@ class FakeModels:
 
 
 def resp(text, chunks=None):
-    return SimpleNamespace(text=text, candidates=[SimpleNamespace(grounding_metadata=SimpleNamespace(grounding_chunks=chunks))])
+    return SimpleNamespace(
+        text=text, candidates=[SimpleNamespace(grounding_metadata=SimpleNamespace(grounding_chunks=chunks))]
+    )
 
 
 def web(uri, title):
@@ -46,7 +48,8 @@ def make(*script):
 
 def test_structured_success():
     c, m = make(resp('{"n": 1}'))
-    assert c.structured(system="s", prompt="p", schema=Out) == Out(n=1) and m.calls[0]["model"] == "primary"
+    assert c.structured(system="s", prompt="p", schema=Out) == Out(n=1)
+    assert m.calls[0]["model"] == "primary"
 
 
 def test_retry_then_fallback():
@@ -70,15 +73,22 @@ def test_timeout_is_retried():
 
 def test_repair_once():
     c, m = make(resp("not json"), resp('{"n": 3}'))
-    assert c.structured(system="s", prompt="p", schema=Out).n == 3 and "failed validation" in str(m.calls[1]["contents"])
+    assert c.structured(system="s", prompt="p", schema=Out).n == 3
+    assert "failed validation" in str(m.calls[1]["contents"])
     with pytest.raises(AIUnavailable):
         make(resp("{}"), resp("nope"))[0].structured(system="s", prompt="p", schema=Out)
 
 
 def test_grounded_sources_only_from_metadata():
-    c, m = make(resp("see https://evil.example", [web("https://a.in", "A"), web("javascript:x", "bad"), SimpleNamespace(web=None)]))
+    c, m = make(
+        resp(
+            "see https://evil.example",
+            [web("https://a.in", "A"), web("javascript:x", "bad"), SimpleNamespace(web=None)],
+        )
+    )
     g = c.grounded(system="s", prompt="p")
-    assert g.sources == [Source(title="A", uri="https://a.in")] and m.calls[0]["config"].tools[0].google_search is not None
+    assert g.sources == [Source(title="A", uri="https://a.in")]
+    assert m.calls[0]["config"].tools[0].google_search is not None
     assert make(SimpleNamespace(text="t", candidates=[]))[0].grounded(system="s", prompt="p").sources == []
 
 
@@ -94,15 +104,27 @@ def test_null_ai_raises():
 
 
 def test_grounded_reports_whether_search_ran():
-    with_queries = SimpleNamespace(text="t", candidates=[SimpleNamespace(
-        grounding_metadata=SimpleNamespace(grounding_chunks=None, web_search_queries=["caterers in Jaipur"]))])
+    with_queries = SimpleNamespace(
+        text="t",
+        candidates=[
+            SimpleNamespace(
+                grounding_metadata=SimpleNamespace(grounding_chunks=None, web_search_queries=["caterers in Jaipur"])
+            )
+        ],
+    )
     assert make(with_queries)[0].grounded(system="s", prompt="p").searched is True
     assert make(resp("t", [web("https://a.in", "A")]))[0].grounded(system="s", prompt="p").searched is True
     assert make(SimpleNamespace(text="t", candidates=[]))[0].grounded(system="s", prompt="p").searched is False
 
 
-@pytest.mark.parametrize("exc", [httpx.ConnectError("down"), httpx.RemoteProtocolError("reset"),
-                                 auth_exceptions.RefreshError("token refresh failed")])
+@pytest.mark.parametrize(
+    "exc",
+    [
+        httpx.ConnectError("down"),
+        httpx.RemoteProtocolError("reset"),
+        auth_exceptions.RefreshError("token refresh failed"),
+    ],
+)
 def test_transport_and_auth_errors_are_transient(exc):
     assert make(exc, resp('{"n": 5}'))[0].structured(system="s", prompt="p", schema=Out).n == 5
     with pytest.raises(AIUnavailable):

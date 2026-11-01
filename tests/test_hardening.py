@@ -13,8 +13,10 @@ from tests.factories import safe_settings
 def test_security_headers_and_request_id(client):
     for path in ["/api/healthz", "/api/nope", "/"]:
         h = client.get(path).headers
-        assert h["x-content-type-options"] == "nosniff" and "frame-ancestors 'none'" in h["content-security-policy"]
-        assert h["referrer-policy"] == "strict-origin-when-cross-origin" and h["x-request-id"]
+        assert h["x-content-type-options"] == "nosniff"
+        assert "frame-ancestors 'none'" in h["content-security-policy"]
+        assert h["referrer-policy"] == "strict-origin-when-cross-origin"
+        assert h["x-request-id"]
 
 
 def test_404_shape(client):
@@ -35,13 +37,16 @@ def test_validation_and_internal_error_shapes():
     c = TestClient(app, raise_server_exceptions=False)
     assert c.post("/_v", json={}).json()["error"]["code"] == "invalid_input"
     r = c.get("/_boom")
-    assert r.status_code == 500 and "secret-detail" not in r.text and r.json()["error"]["code"] == "internal"
+    assert r.status_code == 500
+    assert "secret-detail" not in r.text
+    assert r.json()["error"]["code"] == "internal"
     assert r.headers["x-content-type-options"] == "nosniff"
 
 
 def test_body_limit(client):
     r = client.post("/api/healthz", content=b"x", headers={"content-length": "6000001"})
-    assert r.status_code == 413 and r.json()["error"]["code"] == "payload_too_large"
+    assert r.status_code == 413
+    assert r.json()["error"]["code"] == "payload_too_large"
 
 
 def test_rate_limiter_refills_per_key():
@@ -64,8 +69,8 @@ def test_client_ip_uses_rightmost_forwarded_for():
 def test_request_log_has_no_body(client, capsys):
     client.post("/api/healthz", json={"notes": "SECRET-NOTE"})
     out = capsys.readouterr().out
-    assert '"path": "/api/healthz"' in out and "SECRET-NOTE" not in out
-
+    assert '"path": "/api/healthz"' in out
+    assert "SECRET-NOTE" not in out
 
 
 def test_chunked_body_over_limit_is_413():
@@ -76,4 +81,5 @@ def test_chunked_body_over_limit_is_413():
             yield b"x" * 500
 
     r = c.post("/api/calendar.ics", content=chunks(), headers={"content-type": "application/json"})
-    assert r.status_code == 413 and r.json()["error"]["code"] == "payload_too_large"
+    assert r.status_code == 413
+    assert r.json()["error"]["code"] == "payload_too_large"

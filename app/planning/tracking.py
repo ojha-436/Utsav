@@ -1,4 +1,5 @@
 """Progress and spend against the plan."""
+
 from collections import defaultdict
 
 from app.models import BudgetLine, SpendEntry, Tracking, TrackingLine
@@ -19,8 +20,14 @@ def spend_tracking(lines: list[BudgetLine], spend: list[SpendEntry]) -> Tracking
     planned_keys = {line.key for line in lines}
     return Tracking(
         lines=[
-            TrackingLine(key=l.key, label=l.label, planned=l.amount, actual=actual[l.key], variance=l.amount - actual[l.key])
-            for l in lines
+            TrackingLine(
+                key=line.key,
+                label=line.label,
+                planned=line.amount,
+                actual=actual[line.key],
+                variance=line.amount - actual[line.key],
+            )
+            for line in lines
         ],
         other_actual=sum(amount for key, amount in actual.items() if key not in planned_keys),
     )
