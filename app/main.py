@@ -18,7 +18,7 @@ from app.config import Settings
 from app.errors import AppError, PayloadTooLarge
 from app.logs import configure_logging
 from app.ratelimit import RateLimiter
-from app.routes import meta, plans
+from app.routes import events, meta, plans
 from app.store import EventStore, FirestoreEventStore, InMemoryEventStore
 
 log = logging.getLogger("utsav.http")
@@ -116,6 +116,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     _install_middleware(app, settings)
     app.include_router(meta.router)
     app.include_router(plans.router)
+    app.include_router(events.router)
     _install_pages(app)
     return app
 
