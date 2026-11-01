@@ -41,6 +41,13 @@ def _cut(text: str, max_len: int) -> str:
     return text.strip()[:max_len].strip()
 
 
+def ensure_contingency(categories: list[BudgetCategory]) -> list[BudgetCategory]:
+    """Every plan keeps a contingency line; budget allocation depends on it."""
+    if any(c.key == CONTINGENCY_KEY for c in categories):
+        return categories
+    return [*categories, BudgetCategory(key=CONTINGENCY_KEY, label="Contingency", weight=1, essential=True)]
+
+
 def _clamp(value: int, low: int, high: int) -> int:
     return max(low, min(high, value))
 
@@ -140,13 +147,11 @@ def sanitize_skeleton(draft: SkeletonDraft) -> PlanSkeleton:
     used = {t.category_key for t in tasks} | {v.category_key for v in vendors}
     if OTHER_KEY in used and OTHER_KEY not in known:
         categories.append(BudgetCategory(key=OTHER_KEY, label="Other", weight=1, essential=False))
-    if CONTINGENCY_KEY not in known:
-        categories.append(BudgetCategory(key=CONTINGENCY_KEY, label="Contingency", weight=1, essential=True))
 
     return PlanSkeleton(
         title=_cut(draft.title, 80) or "Your event plan",
         summary=_cut(draft.summary, 400),
-        budget_categories=categories,
+        budget_categories=ensure_contingency(categories),
         tasks=tasks,
         vendors=vendors,
         ideas=ideas,

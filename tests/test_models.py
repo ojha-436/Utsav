@@ -54,3 +54,11 @@ def test_draft_accepts_unbounded_values():
     s = skeleton_dict(n_tasks=50)
     s["budget_categories"][0]["weight"] = 250
     assert len(SkeletonDraft(**s).tasks) == 50
+
+
+@pytest.mark.parametrize("section,field", [("budget_categories", "key"), ("tasks", "id"), ("vendors", "category_key")])
+def test_skeleton_rejects_duplicate_keys(section, field):
+    s = skeleton_dict()
+    s[section][1][field] = s[section][0][field]
+    with pytest.raises(ValidationError):
+        PlanSkeleton(**s)

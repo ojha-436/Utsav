@@ -2,7 +2,7 @@
 from datetime import date, datetime, timedelta
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from app.errors import InvalidInput
 
@@ -78,6 +78,17 @@ class PlanSkeleton(Strict):
     tasks: list[Task] = Field(min_length=5, max_length=40)
     vendors: list[Vendor] = Field(default_factory=list, max_length=12)
     ideas: list[Idea] = Field(min_length=3, max_length=10)
+
+    @model_validator(mode="after")
+    def _unique_ids(self) -> "PlanSkeleton":
+        for name, ids in (
+            ("budget category keys", [c.key for c in self.budget_categories]),
+            ("task ids", [t.id for t in self.tasks]),
+            ("vendor category keys", [v.category_key for v in self.vendors]),
+        ):
+            if len(ids) != len(set(ids)):
+                raise ValueError(f"duplicate {name}")
+        return self
 
 
 # Gemini-facing drafts: plain types only, repaired by planning.sanitize.

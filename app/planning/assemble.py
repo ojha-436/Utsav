@@ -1,0 +1,39 @@
+"""Combine a skeleton with the event, today's date and saved progress into a Plan."""
+from collections.abc import Iterable
+from datetime import date
+
+from app.models import EventInput, PhotoIdea, Plan, PlanSkeleton, PlanSource, SpendEntry, Timeline
+from app.planning.budget import allocate
+from app.planning.sanitize import ensure_contingency
+from app.planning.timeline import schedule_tasks, schedule_vendors, vendor_item_id
+from app.planning.tracking import completion_pct, spend_tracking
+
+
+def assemble_plan(
+    event: EventInput,
+    skeleton: PlanSkeleton,
+    today: date,
+    generated_from: PlanSource = "ai",
+    done_ids: set[str] = frozenset(),
+    spend: list[SpendEntry] | None = None,
+    photo_ideas: Iterable[PhotoIdea] = (),
+) -> Plan:
+    budget = allocate(event.budget_inr, ensure_contingency(skeleton.budget_categories), event.guest_count, event.event_type)
+    tasks = schedule_tasks(event.event_date, skeleton.tasks, today, done_ids)
+    item_ids = [t.id for t in skeleton.tasks] + [vendor_item_id(v.category_key) for v in skeleton.vendors]
+    return Plan(
+        event=event,
+        title=skeleton.title,
+        summary=skeleton.summary,
+        generated_from=generated_from,
+        budget=budget,
+        timeline=Timeline(
+            tasks=tasks,
+            short_notice=any(t.status == "compressed" for t in tasks),
+            completion_pct=completion_pct(item_ids, done_ids),
+        ),
+        vendors=schedule_vendors(event.event_date, skeleton.vendors, today, done_ids),
+        ideas=skeleton.ideas,
+        photo_ideas=list(photo_ideas),
+        tracking=None if spend is None else spend_tracking(budget.lines, spend),
+    )
