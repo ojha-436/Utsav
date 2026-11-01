@@ -7,3 +7,6 @@ __pycache__/
 htmlcov/
 .DS_Store
 node_modules
+.hypothesis/
+.mypy_cache/
+.ruff_cache/

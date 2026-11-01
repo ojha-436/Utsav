@@ -3,6 +3,7 @@
 **Plan weddings, birthdays and community events in minutes: an exact budget, a dated timeline, a vendor checklist and ideas made for your event.**
 
 [![Live demo](https://img.shields.io/badge/demo-live-c2410c)](https://utsav-823065407403.asia-south1.run.app)
+[![CI](https://github.com/ojha-436/Utsav/actions/workflows/ci.yml/badge.svg)](https://github.com/ojha-436/Utsav/actions/workflows/ci.yml)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-3776ab)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.162-009688)
 ![Gemini on Vertex AI](https://img.shields.io/badge/Gemini-Vertex%20AI-4285f4)
@@ -174,13 +175,20 @@ All errors use one shape: `{"error": {"code": "...", "message": "..."}}`.
 
 ✔ = `Authorization: Bearer <Firebase ID token>`. Another user's event returns `404`.
 
-## Testing
+## Testing and code quality
 
 ```bash
 .venv/bin/pytest                                     # 164 tests, about 2 s, no network
 .venv/bin/pytest --cov=app/planning --cov=app/routes --cov-report=term-missing --cov-fail-under=85
-.venv/bin/ruff check app tests && .venv/bin/ruff format --check app tests   # lint, types and formatting
+.venv/bin/ruff check app tests                       # lint: style, bugs, imports, annotations, docstrings
+.venv/bin/ruff format --check app tests              # formatting
+.venv/bin/mypy                                       # strict type checking of app/
+npm ci && npm run lint && npm run format:check       # ESLint + Prettier for static/js and static/css
 ```
+
+- **CI:** `.github/workflows/ci.yml` runs every command above on each push and pull request.
+- **Pre-commit:** `pip install pre-commit && pre-commit install` runs the same checks before each commit (`.pre-commit-config.yaml`).
+- **Conventions:** Google-style docstrings on every public module, class and function in `app/` (enforced by ruff); strict mypy; `.editorconfig` for whitespace.
 
 - **No network or cloud needed.** The tests use a fake Gemini client, the in-memory store and a fake token verifier.
 - **Property tests** (hypothesis) prove that budget lines always sum exactly to the total, for any budget and weights.
@@ -215,7 +223,7 @@ gcloud run deploy utsav --source . --region asia-south1 --allow-unauthenticated 
 
 | Criterion | Evidence |
 |---|---|
-| **Code quality** | Small single-purpose modules; a pure `planning/` core with no I/O; typed Pydantic models at every boundary; one Gemini doorway (`ai/client.py`); thin routes with typed `Annotated` dependencies; product limits in one `limits.py`; full type hints; ruff lint (incl. annotation rules) and formatter clean; one error shape everywhere. |
+| **Code quality** | Small single-purpose modules; a pure `planning/` core with no I/O; typed Pydantic models at every boundary; one Gemini doorway (`ai/client.py`); thin routes with typed `Annotated` dependencies; product limits in one `limits.py`; documented public API (Google-style docstrings, enforced); strict mypy, ruff lint and format clean; ESLint and Prettier for the frontend; all gates run in GitHub Actions CI and pre-commit; one error shape everywhere. |
 | **Problem alignment** | All three event types × all four outputs (budget, timeline, vendor checklist, personalised ideas), plus refine, saving, tracking, calendar, grounded vendors and photo ideas. Event-specific guidance (for example, police, municipal and sound permissions for community events). INR throughout. |
 | **Security** | See [Security](#security): server-side token verification, no API keys, server-only Firestore, prompt-injection containment, CSP, rate and size limits, non-root container. |
 | **Testing** | 164 pytest tests with no network; hypothesis property tests; 98 % coverage on `planning/` + `routes/`, 95 % overall; headless-browser checks of the wizard, keyboard tabs, mobile layout, both themes, sign-in, saving and tracking. |
@@ -234,7 +242,7 @@ app/
   wiring.py        builds the Gemini client and the event store from settings
   deps.py          typed FastAPI dependencies (today in IST, store, AI, rate limit)
   auth.py          Firebase ID-token verification
-  store.py         Firestore (transactional) and in-memory event stores
+  store/           records.py (EventRecord, EventStore protocol), memory.py, firestore_store.py (transactional)
   models/          Pydantic models: common, event, skeleton, plan, api
   ai/              client.py (Gemini), prompts.py, service.py
   planning/        pure logic: sanitize, budget, timeline, tracking, ics, defaults, assemble
@@ -245,6 +253,9 @@ docs/
   screenshots/     README images
   superpowers/     design spec and implementation plan
 Dockerfile         python:3.12-slim, non-root user
+.github/workflows/ CI: ruff, mypy, pytest + coverage gate, ESLint, Prettier
+pyproject.toml     pytest, ruff and mypy configuration
+package.json       frontend lint/format tooling (dev only), with eslint.config.js and .prettierrc.json
 firestore.rules    deny all client access
 ```
 

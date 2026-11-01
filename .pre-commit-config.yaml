@@ -1,0 +1,31 @@
+# Same gates as CI, run locally before each commit with the project's pinned tools.
+# Set up once: pip install pre-commit && pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy (strict)
+        entry: mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: eslint
+        name: eslint
+        entry: npx eslint
+        language: system
+        files: ^static/js/.*\.js$
+      - id: prettier
+        name: prettier
+        entry: npx prettier --check
+        language: system
+        files: ^static/.*\.(js|css)$
