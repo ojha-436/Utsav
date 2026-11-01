@@ -250,3 +250,12 @@ input[aria-invalid="true"] { border-color: #c0392b; }
 .sources summary { cursor: pointer; font-weight: 600; }
 .small { font-size: 0.85rem; }
 .vendor-links { display: inline-flex; gap: var(--space-3); font-size: 0.9rem; }
+
+/* Photo ideas */
+.photo-ideas { margin-top: var(--space-5); display: grid; gap: var(--space-4); }
+.photo-form { display: grid; gap: var(--space-3); max-width: 520px; }
+.photo-form label { font-weight: 600; }
+.photo-preview img { max-height: 180px; border-radius: var(--radius-small); }
+.palette { list-style: none; padding: 0; margin: var(--space-2) 0 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.palette li { display: inline-flex; align-items: center; gap: var(--space-1); font-size: 0.8rem; }
+.palette-swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); display: inline-block; }

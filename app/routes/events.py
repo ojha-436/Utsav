@@ -3,11 +3,13 @@ import re
 import uuid
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
 
+from app.ai.client import AIClient
+from app.ai.service import photo_ideas
 from app.auth import require_user
-from app.deps import get_now, get_store, get_today
-from app.errors import InvalidInput, NotFound
+from app.deps import get_ai, get_now, get_store, get_today
+from app.errors import InvalidInput, NotFound, PayloadTooLarge, UnsupportedMedia
 from app.models import (
     CreateEventRequest,
     EventResponse,
@@ -27,6 +29,8 @@ from app.store import EventRecord, EventStore
 router = APIRouter(prefix="/api/events")
 _EVENT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 MAX_SPEND_ENTRIES = 500  # keeps each Firestore document well under its 1 MiB limit
+MAX_IMAGE_BYTES = 5_000_000
+MAX_PHOTO_IDEAS_KEPT = 20
 
 
 def event_id_param(event_id: str) -> str:
@@ -128,4 +132,32 @@ def delete_spend(entry_id: str, event_id: str = Depends(event_id_param), uid: st
     if len(remaining) == len(record.spend):
         raise NotFound("Spend entry not found")
     record.spend = remaining
+    return to_response(store.save(uid, record), today)
+
+
+def sniff_image(data: bytes) -> str | None:
+    """Image type from its magic bytes; the declared content type is never trusted."""
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+@router.post("/{event_id}/photo-ideas", response_model=EventResponse)
+def add_photo_ideas(request: Request, image: UploadFile = File(...), event_id: str = Depends(event_id_param),
+                    uid: str = Depends(require_user), store: EventStore = Depends(get_store),
+                    ai: AIClient = Depends(get_ai), today: date = Depends(get_today)) -> EventResponse:
+    request.app.state.photo_limiter.check(uid)
+    record = store.get(uid, event_id)
+    data = image.file.read(MAX_IMAGE_BYTES + 1)
+    if len(data) > MAX_IMAGE_BYTES:
+        raise PayloadTooLarge("Images must be 5 MB or smaller")
+    mime = sniff_image(data)
+    if mime is None:
+        raise UnsupportedMedia("Upload a JPEG, PNG or WebP image")
+    ideas = photo_ideas(ai, record.input, data, mime)
+    record.photo_ideas = (ideas + record.photo_ideas)[:MAX_PHOTO_IDEAS_KEPT]
     return to_response(store.save(uid, record), today)

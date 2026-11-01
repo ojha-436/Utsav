@@ -1,5 +1,6 @@
 // Ideas tab: personalised ideas grouped by kind.
 import { el } from "./format.js";
+import { photoIdeas } from "./photo-ideas.js";
 
 const KIND_LABELS = { theme: "Themes", decor: "Decor", food: "Food & drink", activity: "Activities", favour: "Favours" };
 
@@ -16,5 +17,6 @@ export function renderIdeas(plan) {
       ))),
     ));
   }
+  wrap.append(photoIdeas(plan));
   return wrap;
 }
