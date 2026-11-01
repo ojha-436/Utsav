@@ -26,3 +26,9 @@ def test_no_html_injection_sinks_in_js():
 def test_no_inline_scripts():
     for f in Path("static").glob("*.html"):
         assert not re.search(r"<script(?![^>]*\bsrc=)[^>]*>", f.read_text()), f
+
+
+def test_login_dialog_and_pinned_firebase_sdk():
+    assert '<dialog id="login-dialog"' in Path("static/app.html").read_text()
+    js = Path("static/js/auth.js").read_text()
+    assert "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js" in js

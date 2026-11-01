@@ -19,6 +19,11 @@
     <div id="alert" class="alert" role="alert" hidden></div>
     <p id="status" class="status" aria-live="polite"></p>
 
+    <section id="my-events" class="my-events" aria-labelledby="my-events-title" hidden>
+      <h2 id="my-events-title">My events</h2>
+      <ul id="my-events-list" class="event-list"></ul>
+    </section>
+
     <section id="wizard" class="wizard" aria-labelledby="wizard-title">
       <h1 id="wizard-title">Plan your event</h1>
       <ol class="stepper" aria-label="Steps">
@@ -111,6 +116,8 @@
         <p id="plan-summary" class="lede"></p>
         <div id="banners"></div>
         <div class="plan-actions" id="plan-actions">
+          <button type="button" class="btn btn-primary" id="save-plan" hidden>Save plan</button>
+          <span class="saved-note" id="saved-note" hidden>Saved to My events</span>
           <button type="button" class="btn btn-ghost" id="new-plan">Start a new plan</button>
         </div>
       </header>
@@ -135,5 +142,31 @@
       <div id="panel-ideas" class="panel" role="tabpanel" aria-labelledby="tab-ideas" tabindex="0" hidden></div>
     </section>
   </main>
+
+  <dialog id="login-dialog" class="dialog" aria-labelledby="login-title">
+    <form method="dialog" class="dialog-close-row">
+      <button class="btn btn-ghost btn-small" value="cancel" aria-label="Close sign-in">Close</button>
+    </form>
+    <h2 id="login-title">Sign in to save your plan</h2>
+    <p class="muted">Saved plans let you tick off tasks, log spending and upload inspiration photos.</p>
+    <button type="button" class="btn btn-ghost btn-block" id="google-signin">Continue with Google</button>
+    <p class="divider"><span>or</span></p>
+    <form id="email-form" novalidate>
+      <div class="field">
+        <label for="login-email">Email</label>
+        <input id="login-email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" minlength="6" required>
+      </div>
+      <p class="field-error" id="login-error" role="alert"></p>
+      <button type="submit" class="btn btn-primary btn-block" id="email-submit">Sign in</button>
+    </form>
+    <p class="muted switch-mode">
+      <span id="mode-prompt">New to Utsav?</span>
+      <button type="button" class="link-button" id="toggle-mode">Create an account</button>
+    </p>
+  </dialog>
 </body>
 </html>
