@@ -1,4 +1,5 @@
 // Timeline tab: tasks grouped by month with status badges.
+import { exportCalendar } from "./calendar.js";
 import { el, fmtDate, monthLabel } from "./format.js";
 
 export function statusBadge(item, originalKey) {
@@ -10,8 +11,11 @@ export function statusBadge(item, originalKey) {
 
 export function renderTimeline(plan) {
   const wrap = el("div", { class: "timeline" });
-  wrap.append(el("p", { class: "muted" },
-    `${plan.timeline.tasks.length} tasks · ${plan.timeline.completion_pct}% done · event on ${fmtDate(plan.event.event_date)}`));
+  wrap.append(el("div", { class: "panel-toolbar" },
+    el("p", { class: "muted" },
+      `${plan.timeline.tasks.length} tasks · ${plan.timeline.completion_pct}% done · event on ${fmtDate(plan.event.event_date)}`),
+    el("button", { type: "button", class: "btn btn-ghost btn-small", onclick: exportCalendar }, "Export .ics"),
+  ));
 
   const groups = new Map();
   for (const task of plan.timeline.tasks) {

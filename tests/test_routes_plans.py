@@ -65,3 +65,14 @@ def test_ai_endpoints_rate_limited(make_client):
     c = make_client()
     codes = [gen(c).status_code for _ in range(11)]
     assert codes[:10] == [200] * 10 and codes[10] == 429
+
+
+def test_calendar_endpoint(client):
+    r = client.post("/api/calendar.ics", json={"input": event_input(), "skeleton": skeleton_dict()})
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/calendar")
+    assert 'filename="utsav-plan.ics"' in r.headers["content-disposition"] and "BEGIN:VEVENT" in r.text
+
+
+def test_calendar_rejects_tampered_skeleton(client):
+    r = client.post("/api/calendar.ics", json={"input": event_input(), "skeleton": skeleton_dict(n_tasks=41)})
+    assert r.status_code == 422

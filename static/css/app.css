@@ -224,3 +224,6 @@ input[aria-invalid="true"] { border-color: #c0392b; }
 .divider { display: flex; align-items: center; gap: var(--space-3); color: var(--muted); margin: var(--space-4) 0; }
 .divider::before, .divider::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
 .switch-mode { margin-top: var(--space-4); text-align: center; }
+
+.panel-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
+.panel-toolbar p { margin: 0; }
