@@ -9,6 +9,7 @@
 ![Cloud Run](https://img.shields.io/badge/Google%20Cloud-Run-4285f4)
 ![Tests](https://img.shields.io/badge/tests-160%20passing-2e7d32)
 ![Coverage](https://img.shields.io/badge/coverage-94%25-2e7d32)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **Live app:** https://utsav-823065407403.asia-south1.run.app
 
@@ -37,6 +38,7 @@ Built for **PromptWar 5** (Google × Hack2skill).
 - [Security](#security)
 - [Mapping to the judging criteria](#mapping-to-the-judging-criteria)
 - [Project layout](#project-layout)
+- [License](#license)
 
 ## The problem
 
@@ -237,3 +239,7 @@ docs/
 Dockerfile         python:3.12-slim, non-root user
 firestore.rules    deny all client access
 ```
+
+## License
+
+Released under the [MIT License](LICENSE).
