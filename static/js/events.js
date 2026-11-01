@@ -2,19 +2,12 @@
 import { api } from "./api.js";
 import { hooks } from "./dashboard.js";
 import { clear, el, fmtDate } from "./format.js";
-import { emit, state } from "./state.js";
+import { applyEventResponse, emit, state } from "./state.js";
 import { setStatus, showAlert } from "./ui.js";
 
 const section = document.getElementById("my-events");
 const list = document.getElementById("my-events-list");
 const LABELS = { wedding: "Wedding", birthday: "Birthday", community: "Community event" };
-
-export function applyEventResponse(res) {
-  Object.assign(state, {
-    input: res.plan.event, skeleton: res.skeleton, plan: res.plan, eventId: res.id, generatedFrom: res.plan.generated_from,
-  });
-  emit();
-}
 
 export async function saveCurrentPlan() {
   const res = await api("/api/events", {
@@ -34,7 +27,7 @@ export async function openEvent(id) {
 async function deleteEvent(id) {
   await api(`/api/events/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (state.eventId === id) {
-    Object.assign(state, { input: null, skeleton: null, plan: null, eventId: null });
+    Object.assign(state, { input: null, skeleton: null, plan: null, eventId: null, spend: [] });
     emit();
   }
   setStatus("Event deleted.");
@@ -76,4 +69,5 @@ hooks.afterRefine = async () => {
   if (!state.eventId) return;
   const res = await api(`/api/events/${encodeURIComponent(state.eventId)}`, { method: "PUT", body: { skeleton: state.skeleton } });
   state.plan = res.plan;
+  state.spend = res.spend ?? [];
 };

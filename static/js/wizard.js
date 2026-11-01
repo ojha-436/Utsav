@@ -94,7 +94,7 @@ async function onGenerate(event) {
   try {
     const res = await api("/api/plans/generate", { method: "POST", body: { input } });
     Object.assign(state, {
-      input, skeleton: res.skeleton, plan: res.plan, generatedFrom: res.plan.generated_from, eventId: null,
+      input, skeleton: res.skeleton, plan: res.plan, generatedFrom: res.plan.generated_from, eventId: null, spend: [],
     });
     setStatus("Your plan is ready.");
     emit();

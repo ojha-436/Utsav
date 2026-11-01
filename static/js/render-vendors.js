@@ -1,6 +1,7 @@
 // Vendors tab: who to book, by when, and what to ask.
 import { el, fmtDate } from "./format.js";
-import { statusBadge } from "./render-timeline.js";
+import { itemCheckbox, statusBadge } from "./render-timeline.js";
+import { canTrack } from "./tracking.js";
 
 export function renderVendors(plan) {
   const wrap = el("div", { class: "vendors" });
@@ -13,6 +14,7 @@ export function renderVendors(plan) {
     el("p", { class: "muted" }, `Book by ${fmtDate(vendor.book_by)} `, statusBadge(vendor, "original_book_by")),
     el("p", { class: "eyebrow" }, "Ask them"),
     el("ul", { class: "questions" }, vendor.questions_to_ask.map((q) => el("li", {}, q))),
+    canTrack() && el("label", { class: "check-row", for: `chk-${vendor.id}` }, itemCheckbox(vendor, `Mark ${vendor.role} booked`), "Booked"),
   ))));
   return wrap;
 }

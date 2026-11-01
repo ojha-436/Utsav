@@ -304,3 +304,4 @@ class EventResponse(BaseModel):
     version: int
     skeleton: PlanSkeleton
     plan: Plan
+    spend: list[SpendEntry] = Field(default_factory=list)  # entries, so the UI can delete one

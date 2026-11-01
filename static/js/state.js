@@ -7,6 +7,7 @@ export const state = {
   generatedFrom: "ai",
   eventId: null,      // set once the plan is saved
   user: null,         // Firebase user when signed in
+  spend: [],          // spend entries of the saved event
 };
 
 const listeners = new Set();
@@ -17,4 +18,17 @@ export function onChange(fn) {
 
 export function emit() {
   listeners.forEach((fn) => fn(state));
+}
+
+// Load a saved event (EventResponse) into state and re-render.
+export function applyEventResponse(res) {
+  Object.assign(state, {
+    input: res.plan.event,
+    skeleton: res.skeleton,
+    plan: res.plan,
+    eventId: res.id,
+    generatedFrom: res.plan.generated_from,
+    spend: res.spend ?? [],
+  });
+  emit();
 }

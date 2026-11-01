@@ -227,3 +227,13 @@ input[aria-invalid="true"] { border-color: #c0392b; }
 
 .panel-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
 .panel-toolbar p { margin: 0; }
+
+/* Tracking */
+.task-title input[type="checkbox"], .check-row input[type="checkbox"] { width: 20px; height: 20px; min-height: 0; margin: 0 var(--space-2) 0 0; vertical-align: -4px; accent-color: var(--accent); }
+.check-row { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: var(--space-3); font-weight: 600; cursor: pointer; }
+.spend { margin-top: var(--space-6); display: grid; gap: var(--space-4); }
+.spend-form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--space-5); }
+.spend-fields { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.spend-list { list-style: none; padding: 0; margin: 0; }
+.spend-row { display: grid; grid-template-columns: 110px 1fr auto 1fr auto; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 560px) { .spend-row { grid-template-columns: 1fr auto; } .spend-note { grid-column: 1 / -1; } }

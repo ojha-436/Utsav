@@ -1,12 +1,20 @@
 // Timeline tab: tasks grouped by month with status badges.
 import { exportCalendar } from "./calendar.js";
 import { el, fmtDate, monthLabel } from "./format.js";
+import { canTrack, toggleItem } from "./tracking.js";
 
 export function statusBadge(item, originalKey) {
   if (item.status === "compressed") return el("span", { class: "badge badge-warn" }, `Catch up — was due ${fmtDate(item[originalKey])}`);
   if (item.status === "due_today") return el("span", { class: "badge badge-accent" }, "Due today");
   if (item.status === "done") return el("span", { class: "badge badge-done" }, "Done");
   return null;
+}
+
+export function itemCheckbox(item, label) {
+  const box = el("input", { type: "checkbox", id: `chk-${item.id}`, dataset: { item: item.id }, "aria-label": label });
+  box.checked = item.status === "done";
+  box.addEventListener("change", () => toggleItem(box, item.id));
+  return box;
 }
 
 export function renderTimeline(plan) {
@@ -28,7 +36,7 @@ export function renderTimeline(plan) {
       el("h3", {}, month),
       el("ul", { class: "task-list" }, tasks.map((task) => el("li", { class: `task task-${task.status}`, dataset: { id: task.id } },
         el("time", { datetime: task.due }, fmtDate(task.due)),
-        el("span", { class: "task-title" }, task.title),
+        el("span", { class: "task-title" }, canTrack() && itemCheckbox(task, `Mark "${task.title}" done`), task.title),
         statusBadge(task, "original_due"),
       ))),
     ));

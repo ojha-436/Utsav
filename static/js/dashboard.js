@@ -106,7 +106,7 @@ export function initDashboard() {
   }
   refineForm.addEventListener("submit", onRefine);
   document.getElementById("new-plan").addEventListener("click", () => {
-    Object.assign(state, { input: null, skeleton: null, plan: null, eventId: null, generatedFrom: "ai" });
+    Object.assign(state, { input: null, skeleton: null, plan: null, eventId: null, generatedFrom: "ai", spend: [] });
     clearAlert();
     setStatus("");
     emit();
