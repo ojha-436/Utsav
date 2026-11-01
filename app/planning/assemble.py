@@ -1,6 +1,7 @@
 """Combine a skeleton with the event, today's date and saved progress into a Plan."""
 
 from collections.abc import Iterable
+from collections.abc import Set as AbstractSet
 from datetime import date
 
 from app.models import EventInput, PhotoIdea, Plan, PlanSkeleton, PlanSource, SpendEntry, Timeline
@@ -15,7 +16,7 @@ def assemble_plan(
     skeleton: PlanSkeleton,
     today: date,
     generated_from: PlanSource = "ai",
-    done_ids: set[str] = frozenset(),
+    done_ids: AbstractSet[str] = frozenset(),
     spend: list[SpendEntry] | None = None,
     photo_ideas: Iterable[PhotoIdea] = (),
 ) -> Plan:

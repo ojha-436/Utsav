@@ -26,7 +26,7 @@ MAX_TASKS = 40
 MAX_VENDORS = 12
 MAX_IDEAS = 10
 MAX_QUESTIONS = 5
-_IDEA_KINDS = set(get_args(IdeaKind))
+_IDEA_KINDS: dict[str, IdeaKind] = {kind: kind for kind in get_args(IdeaKind)}
 
 
 class SkeletonInvalid(ValueError):
@@ -135,7 +135,7 @@ def _ideas(draft: SkeletonDraft) -> list[Idea]:
         if not title or not description:
             continue
         kind = i.kind.strip().lower()
-        ideas.append(Idea(title=title, description=description, kind=kind if kind in _IDEA_KINDS else "theme"))
+        ideas.append(Idea(title=title, description=description, kind=_IDEA_KINDS.get(kind, "theme")))
         if len(ideas) == MAX_IDEAS:
             break
     if len(ideas) < 3:

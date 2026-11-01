@@ -1,11 +1,12 @@
 """Progress and spend against the plan."""
 
 from collections import defaultdict
+from collections.abc import Set as AbstractSet
 
 from app.models import BudgetLine, SpendEntry, Tracking, TrackingLine
 
 
-def completion_pct(item_ids: list[str], done_ids: set[str]) -> int:
+def completion_pct(item_ids: list[str], done_ids: AbstractSet[str]) -> int:
     """Share of current items that are done. Ids no longer in the plan are ignored."""
     if not item_ids:
         return 0

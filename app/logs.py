@@ -20,7 +20,7 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False)
 
 
-class StdoutHandler(logging.StreamHandler):
+class StdoutHandler(logging.StreamHandler[TextIO]):
     """Always writes to the current sys.stdout (so test capture sees it)."""
 
     @property

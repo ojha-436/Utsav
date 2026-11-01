@@ -2,6 +2,7 @@
 
 import json
 from datetime import date
+from typing import Any
 
 from app.models import EventInput, EventType, PlanSkeleton
 
@@ -49,13 +50,13 @@ _SKELETON_RULES = "\n".join(
 )
 
 
-def data_block(payload: dict) -> str:
+def data_block(payload: dict[str, Any]) -> str:
     """JSON-encode user data and neutralise "<" so the block cannot be closed early."""
     body = json.dumps(payload, ensure_ascii=False, default=str).replace("<", "\\u003c")
     return f"<user_data>\n{body}\n</user_data>"
 
 
-def _event(event: EventInput) -> dict:
+def _event(event: EventInput) -> dict[str, Any]:
     return event.model_dump(mode="json")
 
 

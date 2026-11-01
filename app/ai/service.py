@@ -5,6 +5,7 @@ import logging
 import re
 from collections import Counter
 from datetime import date
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
@@ -66,7 +67,7 @@ def refine_skeleton(
         raise AIUnavailable("The AI returned an incomplete plan; please try again") from exc
 
 
-def extract_json(text: str) -> dict:
+def extract_json(text: str) -> dict[str, Any]:
     """The first JSON object in model text (a ```json fence, or the outermost braces).
 
     Raises:
@@ -106,7 +107,8 @@ def find_vendors(ai: AIClient, event: EventInput, category_keys: list[str]) -> V
     if not grounded.searched:  # names without a search behind them may be invented
         return VendorResponse(items=[], sources=[], message=VENDOR_FALLBACK_MESSAGE)
 
-    wanted, per_category, items = set(category_keys), Counter(), []
+    wanted, items = set(category_keys), []
+    per_category: Counter[str] = Counter()
     for raw in raw_items if isinstance(raw_items, list) else []:
         item = _vendor_item(raw, len(grounded.sources))
         if item and item.category_key in wanted and per_category[item.category_key] < MAX_VENDORS_PER_CATEGORY:

@@ -56,33 +56,33 @@ def calendar(body: CalendarRequest, today: TodayDep, now: NowDep) -> Response:
 @router.post("/vendors", response_model=VendorResponse)
 def vendors(body: VendorRequest, uid: OptionalUserDep, ai: AIDep, store: StoreDep, now: NowDep) -> VendorResponse:
     """Real local vendors via Google Search grounding; cached for 24 h on a saved event."""
-    record = _owned_event(body, uid, store)
-    if record is not None:
-        cached = _fresh_cache(record, body.category_keys, now)
+    owned = _owned_event(body, uid, store)
+    if owned is not None:
+        cached = _fresh_cache(owned[1], body.category_keys, now)
         if cached is not None:
             return cached
 
     result = find_vendors(ai, body.input, body.category_keys)
-    if record is not None and result.items:
-        _save_cache(
-            store,
-            uid,
-            record.id,
-            VendorCache(fetched_at=now, category_keys=body.category_keys, items=result.items, sources=result.sources),
+    if owned is not None and result.items:
+        owner, record = owned
+        cache = VendorCache(
+            fetched_at=now, category_keys=body.category_keys, items=result.items, sources=result.sources
         )
+        _save_cache(store, owner, record.id, cache)
     return result
 
 
-def _owned_event(body: VendorRequest, uid: str | None, store: EventStore) -> EventRecord | None:
-    """The saved event a vendor search belongs to, if any. Requires sign-in."""
+def _owned_event(body: VendorRequest, uid: str | None, store: EventStore) -> tuple[str, EventRecord] | None:
+    """The signed-in owner and the saved event a vendor search belongs to, if any."""
     if body.event_id is None:
         return None
     if uid is None:
         raise Unauthorized("Sign in to use your saved event")
-    return store.get(uid, event_id_param(body.event_id))
+    return uid, store.get(uid, event_id_param(body.event_id))
 
 
 def _fresh_cache(record: EventRecord, category_keys: list[str], now: datetime) -> VendorResponse | None:
+    """The cached vendors if they cover the same categories and are under 24 hours old."""
     cache = record.vendor_cache
     if cache and set(cache.category_keys) == set(category_keys) and now - cache.fetched_at < VENDOR_CACHE_TTL:
         return VendorResponse(items=cache.items, sources=cache.sources)

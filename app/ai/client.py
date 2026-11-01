@@ -97,29 +97,32 @@ class GeminiClient:
 
     def vision(self, *, system: str, prompt: str, image: bytes, mime: str, schema: type[T], timeout_s: float = 30) -> T:
         """Image + prompt structured call; see AIClient.vision."""
-        contents = [types.Part.from_bytes(data=image, mime_type=mime), prompt]
+        contents: list[types.PartUnion] = [types.Part.from_bytes(data=image, mime_type=mime), prompt]
         return self._json_call(contents, self._config(system, timeout_s, schema=schema), schema)
 
     def grounded(self, *, system: str, prompt: str, timeout_s: float = 45) -> GroundedText:
         """Google Search–grounded call; see AIClient.grounded."""
-        tools = [types.Tool(google_search=types.GoogleSearch())]
-        resp = self._generate([prompt], self._config(system, timeout_s, tools=tools))
+        resp = self._generate([prompt], self._config(system, timeout_s, search=True))
         sources = _sources(resp)
         return GroundedText(text=resp.text or "", sources=sources, searched=bool(sources) or _ran_search(resp))
 
     @staticmethod
     def _config(
-        system: str, timeout_s: float, schema: type[BaseModel] | None = None, tools: list[types.Tool] | None = None
+        system: str, timeout_s: float, schema: type[BaseModel] | None = None, search: bool = False
     ) -> types.GenerateContentConfig:
+        """Request settings: JSON output when `schema` is given, Google Search grounding when `search` is set."""
         return types.GenerateContentConfig(
             system_instruction=system,
             http_options=types.HttpOptions(timeout=int(timeout_s * 1000)),
             response_mime_type="application/json" if schema else None,
             response_schema=schema,
-            tools=tools,
+            tools=[types.Tool(google_search=types.GoogleSearch())] if search else None,
         )
 
-    def _generate(self, contents: list, config: types.GenerateContentConfig) -> types.GenerateContentResponse:
+    def _generate(
+        self, contents: list[types.PartUnion], config: types.GenerateContentConfig
+    ) -> types.GenerateContentResponse:
+        """One request with retry and model fallback (primary, primary again, fallback)."""
         for attempt, model in enumerate(self._attempts):
             if attempt == 1:
                 self._sleep(1.0)
@@ -133,7 +136,8 @@ class GeminiClient:
                 log.warning("gemini transport error", extra={"model": model, "reason": type(exc).__name__})
         raise AIUnavailable("The AI service is busy; please try again")
 
-    def _json_call(self, contents: list, config: types.GenerateContentConfig, schema: type[T]) -> T:
+    def _json_call(self, contents: list[types.PartUnion], config: types.GenerateContentConfig, schema: type[T]) -> T:
+        """A structured call; if the JSON doesn't validate, asks once for a corrected answer."""
         resp = self._generate(contents, config)
         try:
             return schema.model_validate_json(resp.text or "")
@@ -147,12 +151,16 @@ class GeminiClient:
             raise AIUnavailable("The AI returned an unusable answer") from exc
 
 
+def _grounding(resp: types.GenerateContentResponse) -> types.GroundingMetadata | None:
+    """The first candidate's grounding metadata, if any."""
+    candidates = resp.candidates or []
+    return candidates[0].grounding_metadata if candidates else None
+
+
 def _sources(resp: types.GenerateContentResponse) -> list[Source]:
     """Citation links come only from grounding metadata, never from model text."""
-    try:
-        chunks = resp.candidates[0].grounding_metadata.grounding_chunks or []
-    except (AttributeError, IndexError, TypeError):
-        return []
+    metadata = _grounding(resp)
+    chunks = (metadata.grounding_chunks if metadata else None) or []
     sources = []
     for chunk in chunks:
         web = getattr(chunk, "web", None)
@@ -164,7 +172,5 @@ def _sources(resp: types.GenerateContentResponse) -> list[Source]:
 
 def _ran_search(resp: types.GenerateContentResponse) -> bool:
     """Gemini sometimes omits source chunks even after searching; the queries still show it searched."""
-    try:
-        return bool(resp.candidates[0].grounding_metadata.web_search_queries)
-    except (AttributeError, IndexError, TypeError):
-        return False
+    metadata = _grounding(resp)
+    return bool(getattr(metadata, "web_search_queries", None))

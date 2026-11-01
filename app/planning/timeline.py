@@ -1,5 +1,6 @@
 """Turn "N days before the event" into real dates and statuses."""
 
+from collections.abc import Set as AbstractSet
 from datetime import date, timedelta
 
 from app.models import ItemStatus, ScheduledTask, ScheduledVendor, Task, Vendor
@@ -21,7 +22,7 @@ def _place(original: date, today: date, done: bool) -> tuple[date, ItemStatus]:
     return original, "upcoming"
 
 
-def schedule_tasks(event_date: date, tasks: list[Task], today: date, done_ids: set[str]) -> list[ScheduledTask]:
+def schedule_tasks(event_date: date, tasks: list[Task], today: date, done_ids: AbstractSet[str]) -> list[ScheduledTask]:
     """Tasks with real due dates, in date order. Open overdue tasks move to today."""
     scheduled = []
     for task in tasks:
@@ -40,7 +41,9 @@ def schedule_tasks(event_date: date, tasks: list[Task], today: date, done_ids: s
     return sorted(scheduled, key=lambda s: s.due)  # sorted() is stable: ties keep input order
 
 
-def schedule_vendors(event_date: date, vendors: list[Vendor], today: date, done_ids: set[str]) -> list[ScheduledVendor]:
+def schedule_vendors(
+    event_date: date, vendors: list[Vendor], today: date, done_ids: AbstractSet[str]
+) -> list[ScheduledVendor]:
     """Vendor bookings with real book-by dates, in date order. Open overdue ones move to today."""
     scheduled = []
     for vendor in vendors:

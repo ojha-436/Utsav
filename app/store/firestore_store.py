@@ -22,7 +22,10 @@ class FirestoreEventStore:
         self._clock = clock
 
     def _events(self, uid: str) -> "firestore.CollectionReference":
-        return self._client.collection("planner_users").document(uid).collection("events")
+        events: firestore.CollectionReference = (
+            self._client.collection("planner_users").document(uid).collection("events")
+        )
+        return events
 
     def list(self, uid: str) -> list[EventRecord]:
         """The user's events, most recently updated first (sorted here; per-user lists are small)."""
@@ -67,7 +70,8 @@ class FirestoreEventStore:
             return record
 
         try:
-            return run(self._client.transaction(max_attempts=FIRESTORE_MAX_ATTEMPTS))
+            updated: EventRecord = run(self._client.transaction(max_attempts=FIRESTORE_MAX_ATTEMPTS))
+            return updated
         except ValueError as exc:
             if str(exc).startswith("Failed to commit transaction"):
                 raise Conflict("Too many changes at once; please try again") from exc

@@ -2,7 +2,7 @@
 
 import threading
 from collections.abc import Callable
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, Header, Request
 
@@ -24,7 +24,8 @@ def firebase_verifier(project_id: str) -> Callable[[str], str]:
             except ValueError:
                 firebase_admin.initialize_app(options={"projectId": project_id})
         try:
-            return auth.verify_id_token(token)["uid"]
+            claims: dict[str, Any] = auth.verify_id_token(token)
+            return str(claims["uid"])
         except Exception as exc:  # any verification failure is a 401, never a 500
             raise Unauthorized("Invalid or expired sign-in") from exc
 
@@ -38,7 +39,8 @@ def optional_user(request: Request, authorization: str | None = Header(default=N
     scheme, _, token = authorization.partition(" ")
     if scheme.lower() != "bearer" or not token.strip():
         raise Unauthorized("Invalid sign-in token")
-    return request.app.state.verify_token(token.strip())
+    verify: Callable[[str], str] = request.app.state.verify_token
+    return verify(token.strip())
 
 
 def require_user(uid: str | None = Depends(optional_user)) -> str:
