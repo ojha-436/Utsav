@@ -1,7 +1,7 @@
 // Inspiration photo → theme and decor ideas with colour palettes (saved events only).
 import { api } from "./api.js";
 import { el } from "./format.js";
-import { applyEventResponse, state } from "./state.js";
+import { applyIfCurrent, state } from "./state.js";
 import { setStatus, showAlert } from "./ui.js";
 
 const MAX_BYTES = 5_000_000;
@@ -18,9 +18,10 @@ async function upload(input, button, preview) {
   form.append("image", file);
   button.disabled = true;
   setStatus("Reading your photo for ideas…");
+  const eventId = state.eventId;
   try {
-    applyEventResponse(await api(`/api/events/${encodeURIComponent(state.eventId)}/photo-ideas`, { method: "POST", form }));
-    setStatus("New ideas added from your photo.");
+    const res = await api(`/api/events/${encodeURIComponent(eventId)}/photo-ideas`, { method: "POST", form });
+    setStatus(applyIfCurrent(eventId, res) ? "New ideas added from your photo." : "Ideas were added to the event you uploaded from.");
   } catch (err) {
     setStatus("");
     showAlert(err.message);

@@ -20,6 +20,18 @@ export function emit() {
   listeners.forEach((fn) => fn(state));
 }
 
+// Forget the current plan (new plan, deleted event, sign-out).
+export function clearPlan() {
+  Object.assign(state, { input: null, skeleton: null, plan: null, eventId: null, generatedFrom: "ai", spend: [] });
+}
+
+// Apply a saved-event response only if that event is still the one on screen.
+export function applyIfCurrent(eventId, res) {
+  if (state.eventId !== eventId) return false;
+  applyEventResponse(res);
+  return true;
+}
+
 // Load a saved event (EventResponse) into state and re-render.
 export function applyEventResponse(res) {
   Object.assign(state, {

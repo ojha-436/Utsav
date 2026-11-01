@@ -17,6 +17,7 @@ async function search(form, button) {
     return;
   }
   error.textContent = "";
+  const key = resultKey();
   button.disabled = true;
   setStatus(`Searching for vendors in ${state.input.city}…`);
   try {
@@ -24,7 +25,8 @@ async function search(form, button) {
       method: "POST",
       body: { input: state.input, category_keys: keys, ...(state.eventId ? { event_id: state.eventId } : {}) },
     });
-    last = { key: resultKey(), data };
+    last = { key, data };
+    if (key !== resultKey()) return; // the user moved to another plan meanwhile
     setStatus(data.items.length ? `Found ${data.items.length} vendors.` : "");
     emit();
   } catch (err) {

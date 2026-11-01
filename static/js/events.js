@@ -2,7 +2,7 @@
 import { api } from "./api.js";
 import { hooks } from "./dashboard.js";
 import { clear, el, fmtDate } from "./format.js";
-import { applyEventResponse, emit, state } from "./state.js";
+import { applyEventResponse, clearPlan, emit, state } from "./state.js";
 import { setStatus, showAlert } from "./ui.js";
 
 const section = document.getElementById("my-events");
@@ -19,15 +19,20 @@ export async function saveCurrentPlan() {
   await loadEvents();
 }
 
+let openRequest = 0;
+
 export async function openEvent(id) {
-  applyEventResponse(await api(`/api/events/${encodeURIComponent(id)}`));
+  const request = ++openRequest; // the last event clicked wins
+  const res = await api(`/api/events/${encodeURIComponent(id)}`);
+  if (request !== openRequest) return;
+  applyEventResponse(res);
   document.getElementById("plan-title").focus();
 }
 
 async function deleteEvent(id) {
   await api(`/api/events/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (state.eventId === id) {
-    Object.assign(state, { input: null, skeleton: null, plan: null, eventId: null, spend: [] });
+    clearPlan();
     emit();
   }
   setStatus("Event deleted.");
@@ -65,9 +70,5 @@ export async function loadEvents() {
 }
 
 // Keep the saved copy in step with refines; the PUT response also carries tracking.
-hooks.afterRefine = async () => {
-  if (!state.eventId) return;
-  const res = await api(`/api/events/${encodeURIComponent(state.eventId)}`, { method: "PUT", body: { skeleton: state.skeleton } });
-  state.plan = res.plan;
-  state.spend = res.spend ?? [];
-};
+hooks.saveRefined = (eventId, skeleton) =>
+  api(`/api/events/${encodeURIComponent(eventId)}`, { method: "PUT", body: { skeleton } });

@@ -5,7 +5,7 @@ import { renderBudget } from "./render-budget.js";
 import { renderIdeas } from "./render-ideas.js";
 import { renderTimeline } from "./render-timeline.js";
 import { renderVendors } from "./render-vendors.js";
-import { emit, state } from "./state.js";
+import { applyEventResponse, clearPlan, emit, state } from "./state.js";
 import { clearAlert, setStatus, showAlert } from "./ui.js";
 import { resetWizard } from "./wizard.js";
 
@@ -13,9 +13,10 @@ const TABS = ["budget", "timeline", "vendors", "ideas"];
 const RENDERERS = { budget: renderBudget, timeline: renderTimeline, vendors: renderVendors, ideas: renderIdeas };
 const EVENT_LABELS = { wedding: "Wedding", birthday: "Birthday", community: "Community event" };
 
-// Extension points for signed-in features (set by events.js).
+// Extension point for signed-in features (set by events.js): persist a refined
+// skeleton to a saved event and return the EventResponse.
 export const hooks = {
-  afterRefine: async () => {},
+  saveRefined: async () => null,
 };
 
 const refineForm = document.getElementById("refine-form");
@@ -78,18 +79,28 @@ async function onRefine(event) {
   refineBtn.disabled = true;
   clearAlert();
   setStatus("Refining your plan…");
+  // The user can open another event or start over while this runs (10–20 s).
+  const sent = { eventId: state.eventId, skeleton: state.skeleton };
+  const stillCurrent = () => state.eventId === sent.eventId && state.skeleton === sent.skeleton;
   try {
     const res = await api("/api/plans/refine", {
       method: "POST",
-      body: { input: state.input, skeleton: state.skeleton, instruction },
+      body: { input: state.input, skeleton: sent.skeleton, instruction },
     });
-    state.skeleton = res.skeleton;
-    state.plan = res.plan;
-    state.generatedFrom = "ai";
-    await hooks.afterRefine();
+    // Save to the event the refine was made for, before showing it anywhere.
+    const saved = sent.eventId ? await hooks.saveRefined(sent.eventId, res.skeleton) : null;
+    if (!stillCurrent()) {
+      setStatus(saved ? "Your earlier refine was saved to that event." : "");
+      return;
+    }
+    if (saved) {
+      applyEventResponse(saved);
+    } else {
+      Object.assign(state, { skeleton: res.skeleton, plan: res.plan, generatedFrom: "ai" });
+      emit();
+    }
     refineInput.value = "";
     setStatus("Plan updated.");
-    emit();
   } catch (err) {
     setStatus("");
     showAlert(err.message, () => refineForm.requestSubmit());
@@ -106,7 +117,7 @@ export function initDashboard() {
   }
   refineForm.addEventListener("submit", onRefine);
   document.getElementById("new-plan").addEventListener("click", () => {
-    Object.assign(state, { input: null, skeleton: null, plan: null, eventId: null, generatedFrom: "ai", spend: [] });
+    clearPlan();
     clearAlert();
     setStatus("");
     emit();

@@ -1,10 +1,11 @@
 // Entry point for /app.
 import { initDashboard, renderPlan } from "./dashboard.js";
-import { emit, onChange, state } from "./state.js";
+import { clearPlan, emit, onChange, state } from "./state.js";
 import { showAlert } from "./ui.js";
-import { initWizard } from "./wizard.js";
+import { initWizard, resetWizard } from "./wizard.js";
 
 let account = null; // account.js module, once accounts are available
+let signedIn = false;
 
 initWizard();
 initDashboard();
@@ -24,10 +25,16 @@ async function startAccounts() {
   ]);
   const enabled = await initAuth(async (user) => {
     accountModule.renderAccount(user);
+    const signedOut = signedIn && !user;
+    signedIn = Boolean(user);
     if (!user) {
-      state.eventId = null;
       document.getElementById("my-events").hidden = true;
-      emit();
+      if (signedOut) {
+        // Don't leave the previous user's plan (and private notes) on a shared screen.
+        clearPlan();
+        emit();
+        resetWizard();
+      }
       return;
     }
     try {
