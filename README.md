@@ -7,8 +7,8 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.162-009688)
 ![Gemini on Vertex AI](https://img.shields.io/badge/Gemini-Vertex%20AI-4285f4)
 ![Cloud Run](https://img.shields.io/badge/Google%20Cloud-Run-4285f4)
-![Tests](https://img.shields.io/badge/tests-160%20passing-2e7d32)
-![Coverage](https://img.shields.io/badge/coverage-94%25-2e7d32)
+![Tests](https://img.shields.io/badge/tests-164%20passing-2e7d32)
+![Coverage](https://img.shields.io/badge/coverage-95%25-2e7d32)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 
@@ -61,6 +61,7 @@ Utsav asks three short questions and returns a plan you can actually run. The am
 | 📸 | **Photo → ideas** | Upload an inspiration photo (JPEG/PNG/WebP, up to 5 MB) and Gemini vision turns it into decor ideas with a colour palette |
 | 📆 | **Calendar export** | Download the timeline as an `.ics` file for Google Calendar, Apple Calendar or Outlook |
 | 🛟 | **Works when the AI is down** | If Gemini fails, you get a built-in standard plan with a banner instead of a blank page |
+| 🌗 | **Light and dark themes** | A theme toggle on every page. It starts from your device setting, remembers your choice and keeps WCAG AA contrast in both themes. |
 
 ## How it works
 
@@ -82,7 +83,8 @@ Browser ─ index.html · app.html (wizard, dashboard, sign-in dialog) · Fireba
    │  fetch /api/*   (Authorization: Bearer <Firebase ID token> when signed in)
    ▼
 FastAPI on Cloud Run (asia-south1)
-   ├─ routes/       plans (open, rate-limited) · events (signed-in, scoped per uid) · meta
+   ├─ routes/       plans (open, rate-limited) · events, tracking, photos (signed-in, scoped per uid) · meta · pages
+   ├─ middleware.py security headers, request ids, logging, streamed body limit · handlers.py one error shape
    ├─ ai/           client.py: the only Gemini caller (retry → fallback model → JSON repair)
    │                prompts.py: user text only inside a <user_data> block · service.py
    ├─ planning/     PURE: sanitize · budget · timeline · tracking · ics · defaults · assemble
@@ -175,13 +177,14 @@ All errors use one shape: `{"error": {"code": "...", "message": "..."}}`.
 ## Testing
 
 ```bash
-.venv/bin/pytest                                     # 160 tests, about 2 s, no network
+.venv/bin/pytest                                     # 164 tests, about 2 s, no network
 .venv/bin/pytest --cov=app/planning --cov=app/routes --cov-report=term-missing --cov-fail-under=85
+.venv/bin/ruff check app tests && .venv/bin/ruff format --check app tests   # lint, types and formatting
 ```
 
 - **No network or cloud needed.** The tests use a fake Gemini client, the in-memory store and a fake token verifier.
 - **Property tests** (hypothesis) prove that budget lines always sum exactly to the total, for any budget and weights.
-- **Coverage:** 97 % on `planning/` + `routes/`, 94 % overall.
+- **Coverage:** 98 % on `planning/` + `routes/`, 95 % overall.
 - Covered: the RFC 5545 calendar output (escaping, 75-octet folding of Devanagari), auth scoping, rate limits, body limits, image sniffing, AI retry and fallback, JSON repair, and a static check that the UI never puts model text into `innerHTML`.
 
 ## Deploying to Cloud Run
@@ -212,25 +215,31 @@ gcloud run deploy utsav --source . --region asia-south1 --allow-unauthenticated 
 
 | Criterion | Evidence |
 |---|---|
-| **Code quality** | Small single-purpose modules; a pure `planning/` core with no I/O; typed Pydantic models at every boundary; one Gemini doorway (`ai/client.py`); thin routes; one error shape everywhere. |
+| **Code quality** | Small single-purpose modules; a pure `planning/` core with no I/O; typed Pydantic models at every boundary; one Gemini doorway (`ai/client.py`); thin routes with typed `Annotated` dependencies; product limits in one `limits.py`; full type hints; ruff lint (incl. annotation rules) and formatter clean; one error shape everywhere. |
 | **Problem alignment** | All three event types × all four outputs (budget, timeline, vendor checklist, personalised ideas), plus refine, saving, tracking, calendar, grounded vendors and photo ideas. Event-specific guidance (for example, police, municipal and sound permissions for community events). INR throughout. |
 | **Security** | See [Security](#security): server-side token verification, no API keys, server-only Firestore, prompt-injection containment, CSP, rate and size limits, non-root container. |
-| **Testing** | 160 pytest tests with no network; hypothesis property tests; 97 % coverage on `planning/` + `routes/`, 94 % overall; headless-browser checks of the wizard, keyboard tabs, mobile layout, sign-in, saving and tracking. |
+| **Testing** | 164 pytest tests with no network; hypothesis property tests; 98 % coverage on `planning/` + `routes/`, 95 % overall; headless-browser checks of the wizard, keyboard tabs, mobile layout, both themes, sign-in, saving and tracking. |
+| **Accessibility** | Semantic HTML with labelled fields and inline errors; skip link; keyboard-operable ARIA tabs; polite live region and `aria-busy` while the AI works; focus moved to new results; light/dark toggle (`aria-pressed`, follows the device setting, remembered); WCAG AA contrast checked for every colour token in both themes; reduced-motion support; no horizontal scroll at 375 px. |
 | **Google Cloud** | Cloud Run · Vertex AI Gemini 3.5 Flash (structured output, Google Search grounding, vision) with 2.5 Flash fallback · Firebase Authentication · Firestore · Cloud Build · Cloud Logging. |
 
 ## Project layout
 
 ```
 app/
-  main.py          app factory, security headers, body limit, request logging
+  main.py          app factory: wires settings, services, middleware and routes
   config.py        settings from environment variables
+  limits.py        product limits (rate limits, image size, spend cap, cache TTL)
+  middleware.py    security headers, request ids, JSON request logs, streamed body limit
+  handlers.py      every error → {"error": {"code", "message"}}
+  wiring.py        builds the Gemini client and the event store from settings
+  deps.py          typed FastAPI dependencies (today in IST, store, AI, rate limit)
   auth.py          Firebase ID-token verification
-  store.py         Firestore and in-memory event stores
-  models.py        Pydantic request/response models
+  store.py         Firestore (transactional) and in-memory event stores
+  models/          Pydantic models: common, event, skeleton, plan, api
   ai/              client.py (Gemini), prompts.py, service.py
   planning/        pure logic: sanitize, budget, timeline, tracking, ics, defaults, assemble
-  routes/          plans.py, events.py, meta.py
-static/            index.html, app.html, css/app.css, js/*.js (ES modules, no build step)
+  routes/          plans, events, tracking, photos, meta, pages (+ common helpers)
+static/            index.html, app.html, css/app.css, js/*.js (ES modules, no build step; theme.js in <head>)
 tests/             pytest suite: factories.py, fakes.py, test_*.py
 docs/
   screenshots/     README images

@@ -1,5 +1,6 @@
 // Saved events: save, list, open, delete, and keep refines in sync.
 import { api } from "./api.js";
+import { EVENT_LABELS } from "./constants.js";
 import { hooks } from "./dashboard.js";
 import { clear, el, fmtDate } from "./format.js";
 import { applyEventResponse, clearPlan, emit, state } from "./state.js";
@@ -7,8 +8,8 @@ import { setStatus, showAlert } from "./ui.js";
 
 const section = document.getElementById("my-events");
 const list = document.getElementById("my-events-list");
-const LABELS = { wedding: "Wedding", birthday: "Birthday", community: "Community event" };
 
+/** Saves the on-screen plan to the signed-in user's events. */
 export async function saveCurrentPlan() {
   const res = await api("/api/events", {
     method: "POST",
@@ -21,6 +22,7 @@ export async function saveCurrentPlan() {
 
 let openRequest = 0;
 
+/** Opens a saved event; if several are clicked quickly, the last click wins. */
 export async function openEvent(id) {
   const request = ++openRequest; // the last event clicked wins
   const res = await api(`/api/events/${encodeURIComponent(id)}`);
@@ -54,6 +56,7 @@ function deleteButton(summary) {
   return button;
 }
 
+/** Refreshes the "My events" list. */
 export async function loadEvents() {
   if (!state.user) {
     section.hidden = true;
@@ -63,7 +66,7 @@ export async function loadEvents() {
   clear(list).append(...events.map((summary) => el("li", { class: "event-row" },
     el("button", { type: "button", class: "link-button event-open", onclick: () => openEvent(summary.id).catch((err) => showAlert(err.message)) },
       summary.title),
-    el("span", { class: "muted" }, `${LABELS[summary.event_type]} · ${fmtDate(summary.event_date)}`),
+    el("span", { class: "muted" }, `${EVENT_LABELS[summary.event_type]} · ${fmtDate(summary.event_date)}`),
     deleteButton(summary),
   )));
   section.hidden = events.length === 0;

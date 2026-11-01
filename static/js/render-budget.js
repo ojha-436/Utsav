@@ -66,6 +66,7 @@ function spendSection(plan) {
   return el("section", { class: "spend" }, form, list);
 }
 
+/** The Budget tab: chart, per-category table and, for saved events, spend tracking. */
 export function renderBudget(plan) {
   const { budget } = plan;
   const tracking = canTrack() ? plan.tracking : null;

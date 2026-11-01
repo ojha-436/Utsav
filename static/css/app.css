@@ -7,6 +7,7 @@
   --ink: #1f2a5c;            /* indigo block-print ink */
   --muted: #545a7a;
   --line: #ead3d8;
+  --field-line: #947a85;  /* form-control borders: ≥3:1 against the page and cards (WCAG 1.4.11) */
   --marigold: #f2a007;       /* decoration and fills only */
   --genda: #e8590c;
   --thread: #7a86b6;
@@ -21,7 +22,7 @@
   --error-bg: #fde7ea; --error-ink: #8e0e2d; --error-line: #f1b7c3;
   --focus: #1f2a5c;
 
-  --seg-0: #1f2a5c; --seg-1: #e89a00; --seg-2: #b3123a; --seg-3: #00796b;
+  --seg-0: #1f2a5c; --seg-1: #b87800; --seg-2: #b3123a; --seg-3: #00796b;
   --seg-4: #6b8e23; --seg-5: #7a86b6; --seg-6: #c2569b; --seg-7: #8d6e63;
 
   --radius: 12px;
@@ -29,10 +30,42 @@
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 36px; --space-7: 56px;
   --font-body: "Hind", "Mukta", system-ui, sans-serif;
   --font-display: "Rozha One", "Hind", Georgia, serif;
+  color-scheme: light;
 }
 
 body[data-event-type="birthday"] { --accent: #00796b; --accent-soft: #d6efec; }
 body[data-event-type="community"] { --accent: #4e6e1f; --accent-soft: #e3ecd3; }
+
+/* Dark theme ("indigo night"). theme.js sets data-theme from the saved choice or the device setting.
+   Every colour token is redefined; values are checked for WCAG AA contrast. */
+:root[data-theme="dark"] {
+  --paper: #12172e;
+  --surface: #1b2140;
+  --surface-2: #262e55;
+  --ink: #f4eef0;
+  --muted: #b9bfdc;
+  --line: #333c66;
+  --field-line: #6a74a6;
+  --marigold: #f2a007;
+  --genda: #e8590c;
+  --thread: #8f9acb;
+
+  --accent: #ff8ba3;
+  --accent-ink: #1a0e1c;
+  --accent-soft: #3b2033;
+
+  --warn-bg: #3a2f10; --warn-ink: #ffd98a;
+  --info-bg: #1e2a55; --info-ink: #d3dcff;
+  --done-bg: #183a24; --done-ink: #a6e8b2;
+  --error-bg: #3d1420; --error-ink: #ffb8c5; --error-line: #74303f;
+  --focus: #ffd166;
+
+  --seg-0: #9aa6e0; --seg-1: #f2a007; --seg-2: #ff6f8e; --seg-3: #3cc4b3;
+  --seg-4: #a8cf62; --seg-5: #7f8fd6; --seg-6: #e78fc6; --seg-7: #c7a596;
+  color-scheme: dark;
+}
+:root[data-theme="dark"] body[data-event-type="birthday"] { --accent: #4fd1c5; --accent-soft: #143c3f; }
+:root[data-theme="dark"] body[data-event-type="community"] { --accent: #a8cf62; --accent-soft: #2a3b1c; }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -81,6 +114,17 @@ code { font-family: var(--font-body); font-size: 0.85rem; color: var(--muted); }
 .brand { font-family: var(--font-display); font-size: 1.85rem; color: var(--ink); text-decoration: none; line-height: 1; }
 .page { max-width: 1120px; margin: 0 auto; padding: 0 var(--space-4) var(--space-7); }
 .account { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
+.header-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; }
+
+/* Theme toggle: a pressed toggle button; the icon is a sun in light mode and a crescent moon in dark. */
+.theme-toggle {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: 38px; padding: 0 var(--space-3);
+  border-radius: 999px; border: 1.5px solid var(--field-line); background: var(--surface); color: var(--ink);
+  font: 600 0.93rem var(--font-body); cursor: pointer;
+}
+.theme-toggle:hover { border-color: var(--ink); }
+.theme-icon { width: 16px; height: 16px; border-radius: 50%; background: var(--marigold); flex: none; }
+.theme-toggle[aria-pressed="true"] .theme-icon { background: transparent; box-shadow: inset -5px -3px 0 0 var(--ink); }
 
 /* Type helpers */
 .eyebrow { font-size: 0.95rem; font-weight: 500; color: var(--muted); margin-bottom: var(--space-1); }
@@ -137,7 +181,7 @@ legend { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: var
 .field-grid { display: grid; gap: var(--space-2) var(--space-4); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 input, textarea, select {
   font: inherit; color: var(--ink); background: var(--surface);
-  border: 1.5px solid #cdb6bd; border-radius: var(--radius-small); padding: var(--space-2) var(--space-3); min-height: 46px; width: 100%;
+  border: 1.5px solid var(--field-line); border-radius: var(--radius-small); padding: var(--space-2) var(--space-3); min-height: 46px; width: 100%;
 }
 input:focus-visible, textarea:focus-visible, select:focus-visible { border-color: var(--ink); }
 input[aria-invalid="true"] { border-color: var(--error-ink); }
@@ -161,7 +205,7 @@ input[aria-invalid="true"] { border-color: var(--error-ink); }
   display: flex; flex-direction: column; gap: var(--space-1); cursor: pointer; position: relative;
   background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); padding: var(--space-4) var(--space-4) var(--space-5);
 }
-.type-card input { position: absolute; opacity: 0; }
+.type-card input { position: absolute; inset: 0; width: 1px; height: 1px; min-height: 0; margin: 0; opacity: 0; }
 .type-card:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 -5px 0 var(--accent); }
 .type-card:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
 .type-name { font-family: var(--font-display); font-size: 1.4rem; line-height: 1.2; }
@@ -169,9 +213,9 @@ input[aria-invalid="true"] { border-color: var(--error-ink); }
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
 .chip, .check-chip {
   display: inline-flex; align-items: center; gap: var(--space-2); min-height: 42px; padding: 0 var(--space-4);
-  border-radius: 999px; border: 1.5px solid #cdb6bd; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer;
+  border-radius: 999px; border: 1.5px solid var(--field-line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer;
 }
-.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .check-chip:has(input:checked) { border-color: var(--ink); background: var(--accent-soft); }
 .check-chip input { width: 18px; height: 18px; min-height: 0; accent-color: var(--accent); }
 .wizard-nav { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-5); }
@@ -298,6 +342,7 @@ input[aria-invalid="true"] { border-color: var(--error-ink); }
 
 @media (max-width: 560px) {
   body { font-size: 16px; }
+  .theme-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .task { grid-template-columns: 1fr; gap: var(--space-1); }
   .refine-row { flex-direction: column; }
   .budget-overview { gap: var(--space-4); }
@@ -311,3 +356,6 @@ input[aria-invalid="true"] { border-color: var(--error-ink); }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+
+[tabindex="-1"]:focus { outline: none; }
+[tabindex="-1"]:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }

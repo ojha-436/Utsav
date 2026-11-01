@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Utsav · AI event planner</title>
   <meta name="description" content="Utsav plans weddings, birthdays and community events: an exact budget, a dated timeline, a vendor checklist and ideas made for you.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbf0f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12172e" media="(prefers-color-scheme: dark)">
+  <script src="/static/js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Rozha+One&display=swap">
@@ -14,7 +18,10 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="brand" href="/">Utsav</a>
-    <a class="btn btn-ghost btn-small" href="/app">Open the planner</a>
+    <div class="header-actions">
+      <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-icon" aria-hidden="true"></span><span class="theme-label">Dark theme</span></button>
+      <a class="btn btn-ghost btn-small" href="/app">Open the planner</a>
+    </div>
   </header>
 
   <main id="main" class="page">

@@ -12,10 +12,12 @@ export const state = {
 
 const listeners = new Set();
 
+/** Registers a listener that runs after every state change. */
 export function onChange(fn) {
   listeners.add(fn);
 }
 
+/** Notifies listeners that state changed (re-renders the page). */
 export function emit() {
   listeners.forEach((fn) => fn(state));
 }

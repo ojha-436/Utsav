@@ -2,10 +2,12 @@
 
 let tokenProvider = null;
 
+/** Sets the function that returns the current Firebase ID token (or null to send none). */
 export function setTokenProvider(fn) {
   tokenProvider = fn;
 }
 
+/** An API failure with the server's error `code` and HTTP `status`. */
 export class ApiError extends Error {
   constructor(status, code, message) {
     super(message);
@@ -14,6 +16,13 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Calls the Utsav API.
+ * @param {string} path API path, e.g. "/api/plans/generate".
+ * @param {{method?: string, body?: object, form?: FormData}} [options]
+ * @returns {Promise<any>} parsed JSON, a Blob for files, or null for 204.
+ * @throws {ApiError} with a user-readable message.
+ */
 export async function api(path, { method = "GET", body, form } = {}) {
   const headers = {};
   if (tokenProvider) {

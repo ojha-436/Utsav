@@ -1,5 +1,6 @@
 // Plan dashboard: header, banners, refine bar and the four tabs.
 import { api } from "./api.js";
+import { EVENT_LABELS } from "./constants.js";
 import { clear, el, fmtDate, inr } from "./format.js";
 import { renderBudget } from "./render-budget.js";
 import { renderIdeas } from "./render-ideas.js";
@@ -11,7 +12,6 @@ import { resetWizard } from "./wizard.js";
 
 const TABS = ["budget", "timeline", "vendors", "ideas"];
 const RENDERERS = { budget: renderBudget, timeline: renderTimeline, vendors: renderVendors, ideas: renderIdeas };
-const EVENT_LABELS = { wedding: "Wedding", birthday: "Birthday", community: "Community event" };
 
 // Extension point for signed-in features (set by events.js): persist a refined
 // skeleton to a saved event and return the EventResponse.
@@ -27,6 +27,7 @@ function banner(kind, text) {
   return el("p", { class: `banner banner-${kind}` }, text);
 }
 
+/** Renders the current plan: header, banners and all four tabs. */
 export function renderPlan() {
   const { plan } = state;
   const e = plan.event;
@@ -77,6 +78,7 @@ async function onRefine(event) {
   const instruction = refineInput.value.trim();
   if (!instruction) return;
   refineBtn.disabled = true;
+  document.getElementById("dashboard").setAttribute("aria-busy", "true");
   clearAlert();
   setStatus("Refining your plan…");
   // The user can open another event or start over while this runs (10–20 s).
@@ -106,9 +108,11 @@ async function onRefine(event) {
     showAlert(err.message, () => refineForm.requestSubmit());
   } finally {
     refineBtn.disabled = false;
+    document.getElementById("dashboard").removeAttribute("aria-busy");
   }
 }
 
+/** Wires the tabs, the refine form and "Start a new plan". */
 export function initDashboard() {
   for (const tab of TABS) {
     const button = document.getElementById(`tab-${tab}`);

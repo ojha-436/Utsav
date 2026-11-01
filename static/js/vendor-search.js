@@ -29,6 +29,7 @@ async function search(form, button) {
     if (key !== resultKey()) return; // the user moved to another plan meanwhile
     setStatus(data.items.length ? `Found ${data.items.length} vendors.` : "");
     emit();
+    document.getElementById("vendor-results")?.focus();
   } catch (err) {
     setStatus("");
     showAlert(err.message);
@@ -43,14 +44,16 @@ function safeLink(source, label) {
 }
 
 function results(plan, data) {
-  if (!data.items.length) return el("p", { class: "banner banner-info" }, data.message ?? "No vendors found.");
+  if (!data.items.length) {
+    return el("p", { class: "banner banner-info", id: "vendor-results", tabindex: "-1" }, data.message ?? "No vendors found.");
+  }
   const roles = new Map(plan.vendors.map((v) => [v.category_key, v.role]));
   const groups = new Map();
   for (const item of data.items) {
     if (!groups.has(item.category_key)) groups.set(item.category_key, []);
     groups.get(item.category_key).push(item);
   }
-  return el("div", { class: "vendor-results" },
+  return el("div", { class: "vendor-results", id: "vendor-results", tabindex: "-1", "aria-label": "Local vendors" },
     [...groups].map(([key, items]) => el("section", {},
       el("h4", {}, roles.get(key) ?? key),
       el("ul", { class: "vendor-hits" }, items.map((item) => el("li", {},
@@ -73,6 +76,7 @@ function results(plan, data) {
   );
 }
 
+/** The "Find local vendors" form and its most recent results. */
 export function vendorSearch(plan) {
   const button = el("button", { type: "submit", class: "btn btn-primary" }, "Find local vendors");
   const form = el("form", { class: "vendor-search", novalidate: true },

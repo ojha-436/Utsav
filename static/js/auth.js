@@ -26,13 +26,18 @@ const FRIENDLY = {
   "auth/unauthorized-domain": "Google sign-in isn't switched on for this site yet. Use email and password for now.",
 };
 
+/** A plain-language message for a Firebase Auth error. */
 export function authMessage(err) {
   return FRIENDLY[err?.code] ?? "Sign-in didn't work. Please try again.";
 }
 
+/** True when the user simply closed the Google pop-up. */
 export const isCancelled = (err) => ["auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(err?.code);
 
-// Returns false when accounts aren't configured (e.g. local development).
+/**
+ * Starts Firebase Auth and calls `onUser` on every sign-in change.
+ * @returns {Promise<boolean>} false when accounts aren't configured (local development).
+ */
 export async function initAuth(onUser) {
   const config = await api("/api/config");
   if (!config.firebaseApiKey) return false;
@@ -50,7 +55,11 @@ export async function initAuth(onUser) {
   return true;
 }
 
+/** Signs in with a Google pop-up. */
 export const signInGoogle = () => signInWithPopup(auth, new GoogleAuthProvider());
+/** Signs in with email and password. */
 export const signInEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
+/** Creates an account with email and password. */
 export const signUpEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
+/** Signs the current user out. */
 export const signOut = () => firebaseSignOut(auth);

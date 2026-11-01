@@ -4,6 +4,7 @@ import { photoIdeas } from "./photo-ideas.js";
 
 const KIND_LABELS = { theme: "Themes", decor: "Decor", food: "Food & drink", activity: "Activities", favour: "Favours" };
 
+/** The Ideas tab: ideas grouped by kind, plus photo ideas for saved events. */
 export function renderIdeas(plan) {
   const wrap = el("div", { class: "ideas" });
   for (const [kind, label] of Object.entries(KIND_LABELS)) {

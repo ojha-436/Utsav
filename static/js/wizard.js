@@ -20,15 +20,24 @@ const addDays = (date, n) => {
   return copy;
 };
 
+const isWholeNumberBetween = (value, min, max) => {
+  const n = Number(value);
+  return value.trim() !== "" && Number.isInteger(n) && n >= min && n <= max;
+};
+
+// Each rule returns an error message, or "" when the field is valid. They mirror the server's limits.
 const RULES = {
-  event_date: (v, input) => {
-    if (!v) return "Pick a date.";
-    if (v < input.min || v > input.max) return "Choose a date from tomorrow up to 3 years ahead.";
+  event_date: (value, input) => {
+    if (!value) return "Pick a date.";
+    if (value < input.min || value > input.max) return "Choose a date from tomorrow up to 3 years ahead.";
     return "";
   },
-  guest_count: (v) => (Number.isInteger(Number(v)) && v >= 1 && v <= 5000 && v !== "" ? "" : "Enter between 1 and 5,000 guests."),
-  budget_inr: (v) => (Number.isInteger(Number(v)) && v >= 1000 && v <= 100000000 && v !== "" ? "" : "Enter a budget from ₹1,000 to ₹10 crore."),
-  city: (v) => (v.trim().length >= 2 && v.trim().length <= 80 ? "" : "Enter your city."),
+  guest_count: (value) => (isWholeNumberBetween(value, 1, 5000) ? "" : "Enter between 1 and 5,000 guests."),
+  budget_inr: (value) => (isWholeNumberBetween(value, 1000, 100000000) ? "" : "Enter a budget from ₹1,000 to ₹10 crore."),
+  city: (value) => {
+    const length = value.trim().length;
+    return length >= 2 && length <= 80 ? "" : "Enter your city.";
+  },
 };
 
 function validateDetails() {
@@ -89,6 +98,7 @@ async function onGenerate(event) {
   }
   const input = readInput();
   generateBtn.disabled = true;
+  document.getElementById("wizard").setAttribute("aria-busy", "true");
   clearAlert();
   setStatus("Planning your event… this usually takes 10–20 seconds.");
   try {
@@ -104,13 +114,16 @@ async function onGenerate(event) {
     showAlert(err.message, () => form.requestSubmit());
   } finally {
     generateBtn.disabled = false;
+    document.getElementById("wizard").removeAttribute("aria-busy");
   }
 }
 
+/** Returns the wizard to its first step. */
 export function resetWizard() {
   show(0);
 }
 
+/** Wires the three-step wizard and its validation. */
 export function initWizard() {
   const today = new Date();
   form.elements.event_date.min = isoDate(addDays(today, 1));

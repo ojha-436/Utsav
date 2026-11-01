@@ -8,6 +8,7 @@ function doneIds(plan) {
   return [...plan.timeline.tasks, ...plan.vendors].filter((item) => item.status === "done").map((item) => item.id);
 }
 
+/** Downloads the current plan as an .ics file (open tasks and vendor bookings). */
 export async function exportCalendar() {
   try {
     const blob = await api("/api/calendar.ics", {

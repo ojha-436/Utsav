@@ -13,6 +13,7 @@ const toggle = document.getElementById("toggle-mode");
 let mode = "signin";
 let pendingSave = false;
 
+/** Opens the sign-in dialog. */
 export function openLogin() {
   loginError.textContent = "";
   dialog.showModal();
@@ -38,6 +39,7 @@ async function attempt(fn) {
   }
 }
 
+/** Renders the header's sign-in / sign-out controls for `user` (null when signed out). */
 export function renderAccount(user) {
   const nav = clear(document.getElementById("account"));
   if (user) {
@@ -50,12 +52,14 @@ export function renderAccount(user) {
   }
 }
 
+/** Shows either the Save button or the "Saved" note for the current plan. */
 export function renderSaveState() {
   const saved = Boolean(state.eventId);
   document.getElementById("save-plan").hidden = saved || !state.plan;
   document.getElementById("saved-note").hidden = !saved;
 }
 
+/** Finishes a save that was waiting for the user to sign in. */
 export async function afterSignIn() {
   if (pendingSave && state.plan && !state.eventId) {
     pendingSave = false;
@@ -63,6 +67,7 @@ export async function afterSignIn() {
   }
 }
 
+/** Wires the sign-in dialog and the Save button. */
 export function initAccount() {
   toggle.addEventListener("click", () => setMode(mode === "signin" ? "signup" : "signin"));
   document.getElementById("google-signin").addEventListener("click", () => attempt(signInGoogle));

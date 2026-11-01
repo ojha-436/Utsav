@@ -21,7 +21,12 @@ async function upload(input, button, preview) {
   const eventId = state.eventId;
   try {
     const res = await api(`/api/events/${encodeURIComponent(eventId)}/photo-ideas`, { method: "POST", form });
-    setStatus(applyIfCurrent(eventId, res) ? "New ideas added from your photo." : "Ideas were added to the event you uploaded from.");
+    if (applyIfCurrent(eventId, res)) {
+      setStatus("New ideas added from your photo.");
+      document.getElementById("photo-idea-list")?.focus();
+    } else {
+      setStatus("Ideas were added to the event you uploaded from.");
+    }
   } catch (err) {
     setStatus("");
     showAlert(err.message);
@@ -61,6 +66,7 @@ function ideaCard(idea) {
     })));
 }
 
+/** The "Ideas from your photo" section (upload form for saved events). */
 export function photoIdeas(plan) {
   const section = el("section", { class: "card photo-ideas" }, el("h3", {}, "Ideas from your photo"));
   if (!state.eventId) {
@@ -68,6 +74,9 @@ export function photoIdeas(plan) {
     return section;
   }
   section.append(uploadForm());
-  if (plan.photo_ideas.length) section.append(el("div", { class: "card-grid" }, plan.photo_ideas.map(ideaCard)));
+  if (plan.photo_ideas.length) {
+    section.append(el("div", { class: "card-grid", id: "photo-idea-list", tabindex: "-1", "aria-label": "Ideas from your photo" },
+      plan.photo_ideas.map(ideaCard)));
+  }
   return section;
 }

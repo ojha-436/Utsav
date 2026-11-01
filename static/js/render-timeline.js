@@ -3,6 +3,7 @@ import { exportCalendar } from "./calendar.js";
 import { el, fmtDate, monthLabel } from "./format.js";
 import { canTrack, toggleItem } from "./tracking.js";
 
+/** A badge for compressed, due-today or done items; null for upcoming ones. */
 export function statusBadge(item, originalKey) {
   if (item.status === "compressed") return el("span", { class: "badge badge-warn" }, `Catch up — was due ${fmtDate(item[originalKey])}`);
   if (item.status === "due_today") return el("span", { class: "badge badge-accent" }, "Due today");
@@ -10,6 +11,7 @@ export function statusBadge(item, originalKey) {
   return null;
 }
 
+/** A checkbox that ticks a task or vendor item on the saved event. */
 export function itemCheckbox(item, label) {
   const box = el("input", { type: "checkbox", id: `chk-${item.id}`, dataset: { item: item.id }, "aria-label": label });
   box.checked = item.status === "done";
@@ -17,6 +19,7 @@ export function itemCheckbox(item, label) {
   return box;
 }
 
+/** The Timeline tab: tasks grouped by month, with calendar export. */
 export function renderTimeline(plan) {
   const wrap = el("div", { class: "timeline" });
   wrap.append(el("div", { class: "panel-toolbar" },

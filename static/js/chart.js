@@ -8,6 +8,7 @@ function svg(tag, attrs) {
   return node;
 }
 
+/** An SVG donut chart of budget lines, labelled for screen readers by `label`. */
 export function donut(lines, label) {
   const size = 200;
   const radius = 80;

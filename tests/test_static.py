@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
 
+import pytest
+
 
 def test_pages_served(client):
     assert "Utsav" in client.get("/").text
@@ -33,3 +35,28 @@ def test_login_dialog_and_pinned_firebase_sdk():
     assert '<dialog id="login-dialog"' in Path("static/app.html").read_text()
     js = Path("static/js/auth.js").read_text()
     assert "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js" in js
+
+
+@pytest.mark.parametrize("page", ["static/index.html", "static/app.html"])
+def test_pages_have_an_accessible_theme_toggle(page):
+    html = Path(page).read_text()
+    head = html[: html.index("</head>")]
+    assert '<script src="/static/js/theme.js"></script>' in head  # runs before paint, so no flash of the wrong theme
+    assert re.search(r'<button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"', html)
+    assert 'name="color-scheme" content="light dark"' in head
+
+
+def test_dark_theme_tokens_cover_every_colour_token():
+    css = Path("static/css/app.css").read_text()
+    light = css[css.index(":root {") : css.index("}", css.index(":root {"))]
+    dark_start = css.index(':root[data-theme="dark"] {')
+    dark = css[dark_start : css.index("}", dark_start)]
+    colour_tokens = set(re.findall(r"(--[a-z0-9-]+):\s*#", light))
+    assert colour_tokens
+    assert colour_tokens <= set(re.findall(r"(--[a-z0-9-]+):", dark))
+    assert "color-scheme: dark" in dark
+
+
+def test_no_hard_coded_white_text():
+    # Text colours must come from tokens so they flip with the theme.
+    assert not re.search(r"(?<!-)color:\s*#fff", Path("static/css/app.css").read_text())

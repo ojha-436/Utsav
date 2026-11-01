@@ -4,6 +4,7 @@ import { itemCheckbox, statusBadge } from "./render-timeline.js";
 import { canTrack } from "./tracking.js";
 import { vendorSearch } from "./vendor-search.js";
 
+/** The Vendors tab: who to book, by when, what to ask, and local vendor search. */
 export function renderVendors(plan) {
   const wrap = el("div", { class: "vendors" });
   if (!plan.vendors.length) {

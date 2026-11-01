@@ -5,8 +5,10 @@ import { setStatus, showAlert } from "./ui.js";
 
 const eventPath = () => `/api/events/${encodeURIComponent(state.eventId)}`;
 
+/** True when the plan is saved, so ticks and spending can be recorded. */
 export const canTrack = () => Boolean(state.eventId);
 
+/** Ticks or unticks an item, rolling the checkbox back if the save fails. */
 export async function toggleItem(checkbox, itemId) {
   const eventId = state.eventId;
   checkbox.disabled = true;
@@ -22,6 +24,7 @@ export async function toggleItem(checkbox, itemId) {
   }
 }
 
+/** Logs a spend entry from the spend form. */
 export async function addSpend(form) {
   const amount = Number(form.elements.amount.value);
   const error = form.querySelector(".field-error");
@@ -45,6 +48,7 @@ export async function addSpend(form) {
   }
 }
 
+/** Removes a spend entry. */
 export async function deleteSpend(entryId) {
   const eventId = state.eventId;
   try {
