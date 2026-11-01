@@ -5,11 +5,7 @@ import pytest
 from app.deps import get_today
 from app.errors import NotFound
 from app.routes.events import event_id_param
-from tests.factories import AUTH_U1, AUTH_U2, TODAY, event_input, skeleton_dict
-
-
-def create(c, headers=AUTH_U1, **inp):
-    return c.post("/api/events", json={"input": event_input(**inp), "skeleton": skeleton_dict()}, headers=headers)
+from tests.factories import AUTH_U1, AUTH_U2, TODAY, create_event, event_input, skeleton_dict
 
 
 def test_requires_auth(client):
@@ -17,7 +13,7 @@ def test_requires_auth(client):
 
 
 def test_create_get_and_list(client):
-    r = create(client)
+    r = create_event(client)
     assert r.status_code == 201
     body = r.json()
     assert body["version"] == 1
@@ -28,7 +24,7 @@ def test_create_get_and_list(client):
 
 
 def test_create_rejects_today(client):
-    assert create(client, event_date=str(TODAY)).status_code == 422
+    assert create_event(client, event_date=str(TODAY)).status_code == 422
 
 
 def test_create_keeps_default_source(client):
@@ -41,7 +37,7 @@ def test_create_keeps_default_source(client):
 
 
 def test_cross_user_is_404(client):
-    eid = create(client).json()["id"]
+    eid = create_event(client).json()["id"]
     for method in ("get", "delete"):
         assert getattr(client, method)(f"/api/events/{eid}", headers=AUTH_U2).status_code == 404
     assert client.put(f"/api/events/{eid}", json={"skeleton": skeleton_dict()}, headers=AUTH_U2).status_code == 404
@@ -49,7 +45,7 @@ def test_cross_user_is_404(client):
 
 
 def test_put_bumps_version_and_keeps_progress(client):
-    eid = create(client).json()["id"]
+    eid = create_event(client).json()["id"]
     client.app.state.store.update(
         "u1", eid, lambda rec: rec.progress.__setitem__("book-venue", datetime(2026, 11, 1, tzinfo=UTC))
     )
@@ -60,20 +56,20 @@ def test_put_bumps_version_and_keeps_progress(client):
 
 
 def test_put_changed_date_must_be_future(client):
-    eid = create(client).json()["id"]
+    eid = create_event(client).json()["id"]
     body = {"input": event_input(event_date=str(TODAY)), "skeleton": skeleton_dict()}
     assert client.put(f"/api/events/{eid}", json=body, headers=AUTH_U1).status_code == 422
 
 
 def test_get_after_event_date_passed(make_client):
     c = make_client()
-    eid = create(c).json()["id"]
+    eid = create_event(c).json()["id"]
     c.app.dependency_overrides[get_today] = lambda: date(2027, 3, 1)
     assert c.get(f"/api/events/{eid}", headers=AUTH_U1).status_code == 200
 
 
 def test_delete_and_bad_id(client):
-    eid = create(client).json()["id"]
+    eid = create_event(client).json()["id"]
     assert client.delete(f"/api/events/{eid}", headers=AUTH_U1).status_code == 204
     assert client.get(f"/api/events/{eid}", headers=AUTH_U1).status_code == 404
     assert client.get("/api/events/bad.id!", headers=AUTH_U1).status_code == 404

@@ -6,19 +6,13 @@ from app.ai.service import PhotoIdeasDraft
 from app.errors import AIUnavailable
 from app.models import SpendEntry
 from app.ratelimit import RateLimiter
-from tests.factories import AUTH_U1, AUTH_U2, event_input, skeleton_dict
+from tests.factories import AUTH_U1, AUTH_U2, save_event
 from tests.fakes import FakeAI
 
 JPEG = b"\xff\xd8\xff\xe0" + b"0" * 64
 PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 64
 WEBP = b"RIFF\0\0\0\0WEBPVP8 " + b"0" * 64
 IDEAS = PhotoIdeasDraft(ideas=[{"title": "Marigold arch", "description": "d", "palette": ["#f4a300"]}])
-
-
-def save_event(c):
-    return c.post("/api/events", json={"input": event_input(), "skeleton": skeleton_dict()}, headers=AUTH_U1).json()[
-        "id"
-    ]
 
 
 def setup(make_client, n=1):

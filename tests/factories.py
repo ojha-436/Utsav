@@ -89,3 +89,14 @@ def fake_verify(token: str) -> str:
     if token in {"u1", "u2"}:
         return token
     raise Unauthorized("bad token")
+
+
+def create_event(client, headers=AUTH_U1, **input_overrides):
+    """POSTs a saved event built from the default factories and returns the HTTP response."""
+    body = {"input": event_input(**input_overrides), "skeleton": skeleton_dict()}
+    return client.post("/api/events", json=body, headers=headers)
+
+
+def save_event(client, headers=AUTH_U1, **input_overrides) -> str:
+    """Saves an event for user u1 (by default) and returns its id."""
+    return create_event(client, headers, **input_overrides).json()["id"]

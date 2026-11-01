@@ -8,7 +8,7 @@ from app.ai.service import VENDOR_FALLBACK_MESSAGE
 from app.deps import get_now
 from app.errors import AIUnavailable
 from app.models import Source
-from tests.factories import AUTH_U1, AUTH_U2, event_input, skeleton_dict
+from tests.factories import AUTH_U1, AUTH_U2, event_input, save_event, skeleton_dict
 from tests.fakes import FakeAI
 
 VENDOR = {"category_key": "catering", "name": "Spice Route", "why": "Rajasthani thali", "source_index": 0}
@@ -23,12 +23,6 @@ def vend(c, headers=None, **kw):
 
 def grounded_ai(n=5):
     return FakeAI(grounded=[GroundedText(VJSON, [Source(title="A", uri="https://a.in")])] * n)
-
-
-def save_event(c):
-    return c.post("/api/events", json={"input": event_input(), "skeleton": skeleton_dict()}, headers=AUTH_U1).json()[
-        "id"
-    ]
 
 
 def test_guest_vendors(make_client):
