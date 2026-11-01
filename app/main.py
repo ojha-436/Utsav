@@ -8,11 +8,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from google import genai
+
+from app.ai.client import AIClient, GeminiClient, NullAI
 from app.config import Settings
 from app.errors import AppError, PayloadTooLarge
 from app.logs import configure_logging
 from app.ratelimit import RateLimiter
-from app.routes import meta
+from app.routes import meta, plans
 
 log = logging.getLogger("utsav.http")
 
@@ -76,16 +79,28 @@ def _install_middleware(app: FastAPI, settings: Settings) -> None:
         return response
 
 
+def build_ai(settings: Settings) -> AIClient:
+    """Vertex AI with the service account when enabled, else an API key, else no AI."""
+    if settings.use_vertexai:
+        sdk = genai.Client(vertexai=True, project=settings.gcp_project, location=settings.gemini_location)
+        return GeminiClient("", settings.gemini_model, settings.gemini_fallback_model, sdk=sdk)
+    if settings.gemini_api_key:
+        return GeminiClient(settings.gemini_api_key, settings.gemini_model, settings.gemini_fallback_model)
+    return NullAI()
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     configure_logging()
     app = FastAPI(title="Utsav", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
+    app.state.ai = build_ai(settings)
     app.state.ai_limiter = RateLimiter(10, 60)
     app.state.photo_limiter = RateLimiter(5, 60)
     _install_error_handlers(app)
     _install_middleware(app, settings)
     app.include_router(meta.router)
+    app.include_router(plans.router)
     return app
 
 

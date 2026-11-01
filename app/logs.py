@@ -35,3 +35,5 @@ def configure_logging() -> None:
     handler.setFormatter(JsonFormatter())
     root.addHandler(handler)
     root.setLevel(logging.INFO)
+    for noisy in ("httpx", "httpx2", "google_genai"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
