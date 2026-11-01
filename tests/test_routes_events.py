@@ -1,6 +1,10 @@
 from datetime import UTC, date, datetime
 
+import pytest
+
 from app.deps import get_today
+from app.errors import NotFound
+from app.routes.events import event_id_param
 from tests.factories import AUTH_U1, AUTH_U2, TODAY, event_input, skeleton_dict
 
 
@@ -41,10 +45,7 @@ def test_cross_user_is_404(client):
 
 def test_put_bumps_version_and_keeps_progress(client):
     eid = create(client).json()["id"]
-    store = client.app.state.store
-    rec = store.get("u1", eid)
-    rec.progress["book-venue"] = datetime(2026, 11, 1, tzinfo=UTC)
-    store.save("u1", rec)
+    client.app.state.store.update("u1", eid, lambda rec: rec.progress.__setitem__("book-venue", datetime(2026, 11, 1, tzinfo=UTC)))
     r = client.put(f"/api/events/{eid}", json={"skeleton": skeleton_dict(title="Renamed")}, headers=AUTH_U1).json()
     assert r["version"] == 2 and r["plan"]["title"] == "Renamed"
     assert next(t for t in r["plan"]["timeline"]["tasks"] if t["id"] == "book-venue")["status"] == "done"
@@ -68,3 +69,10 @@ def test_delete_and_bad_id(client):
     assert client.delete(f"/api/events/{eid}", headers=AUTH_U1).status_code == 204
     assert client.get(f"/api/events/{eid}", headers=AUTH_U1).status_code == 404
     assert client.get("/api/events/bad.id!", headers=AUTH_U1).status_code == 404
+
+
+
+@pytest.mark.parametrize("bad", ["__x__", "a_b", "a-b", "x" * 65, ""])
+def test_event_id_rejects_ids_firestore_would_refuse(bad):
+    with pytest.raises(NotFound):
+        event_id_param(bad)

@@ -17,6 +17,9 @@ ItemId = Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9-]{0,47}$")]
 HexColour = Annotated[str, StringConstraints(pattern=r"^#[0-9a-f]{6}$")]
 
 MAX_EVENT_DAYS_AHEAD = 1096
+# Outer sanity bounds for any event date, so date arithmetic can never overflow.
+EARLIEST_EVENT_DATE = date(2000, 1, 1)
+LATEST_EVENT_DATE = date(2100, 12, 31)
 
 
 class Strict(BaseModel):
@@ -27,7 +30,7 @@ class Strict(BaseModel):
 
 class EventInput(Strict):
     event_type: EventType
-    event_date: date
+    event_date: date = Field(ge=EARLIEST_EVENT_DATE, le=LATEST_EVENT_DATE)
     guest_count: int = Field(ge=1, le=5000)
     budget_inr: int = Field(ge=1000, le=100_000_000)
     city: str = Field(min_length=2, max_length=80)

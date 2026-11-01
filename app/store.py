@@ -2,6 +2,7 @@
 import threading
 import uuid
 from datetime import UTC, datetime
+from collections.abc import Callable
 from typing import Protocol
 
 from pydantic import BaseModel, Field
@@ -42,7 +43,10 @@ class EventStore(Protocol):
 
     def get(self, uid: str, event_id: str) -> EventRecord: ...
 
-    def save(self, uid: str, record: EventRecord) -> EventRecord: ...
+    def update(self, uid: str, event_id: str, mutate: Callable[[EventRecord], None]) -> EventRecord:
+        """Atomically read the current record, apply `mutate`, and write it back.
+        Raises NotFound (and writes nothing) if the event doesn't exist or `mutate` raises."""
+        ...
 
     def delete(self, uid: str, event_id: str) -> None: ...
 
@@ -79,13 +83,16 @@ class InMemoryEventStore:
             raise _not_found()
         return record.model_copy(deep=True)
 
-    def save(self, uid: str, record: EventRecord) -> EventRecord:
-        updated = record.model_copy(update={"updated_at": self._clock()}, deep=True)
-        with self._lock:
-            if (uid, record.id) not in self._records:
+    def update(self, uid: str, event_id: str, mutate: Callable[[EventRecord], None]) -> EventRecord:
+        with self._lock:  # held across read-mutate-write, so concurrent updates can't interleave
+            current = self._records.get((uid, event_id))
+            if current is None:
                 raise _not_found()
-            self._records[(uid, record.id)] = updated.model_copy(deep=True)
-        return updated
+            record = current.model_copy(deep=True)
+            mutate(record)
+            record.updated_at = self._clock()
+            self._records[(uid, event_id)] = record.model_copy(deep=True)
+        return record
 
     def delete(self, uid: str, event_id: str) -> None:
         with self._lock:
@@ -119,13 +126,23 @@ class FirestoreEventStore:
             raise _not_found()
         return EventRecord.model_validate(snapshot.to_dict())
 
-    def save(self, uid: str, record: EventRecord) -> EventRecord:
-        ref = self._events(uid).document(record.id)
-        if not ref.get().exists:
-            raise _not_found()
-        updated = record.model_copy(update={"updated_at": self._clock()})
-        ref.set(updated.model_dump(mode="json"))
-        return updated
+    def update(self, uid: str, event_id: str, mutate: Callable[[EventRecord], None]) -> EventRecord:
+        from google.cloud import firestore
+
+        ref = self._events(uid).document(event_id)
+
+        @firestore.transactional
+        def run(transaction) -> EventRecord:
+            snapshot = ref.get(transaction=transaction)
+            if not snapshot.exists:  # never recreate a deleted event
+                raise _not_found()
+            record = EventRecord.model_validate(snapshot.to_dict())
+            mutate(record)
+            record.updated_at = self._clock()
+            transaction.set(ref, record.model_dump(mode="json"))
+            return record
+
+        return run(self._client.transaction())
 
     def delete(self, uid: str, event_id: str) -> None:
         ref = self._events(uid).document(event_id)

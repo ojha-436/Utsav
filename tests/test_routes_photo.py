@@ -1,7 +1,10 @@
+from datetime import UTC, datetime
+
 import pytest
 
 from app.ai.service import PhotoIdeasDraft
 from app.errors import AIUnavailable
+from app.models import SpendEntry
 from app.ratelimit import RateLimiter
 from tests.factories import AUTH_U1, AUTH_U2, event_input, skeleton_dict
 from tests.fakes import FakeAI
@@ -60,3 +63,19 @@ def test_ai_failure_502(make_client):
     c = make_client(ai=FakeAI(vision=AIUnavailable("x")))
     eid = save_event(c)
     assert upload(c, eid, JPEG).status_code == 502
+
+
+
+def test_photo_ideas_keep_spend_logged_during_the_upload(make_client):
+    holder = {}
+    entry = SpendEntry(id="s1", category_key="venue", amount=5000, at=datetime(2026, 11, 1, tzinfo=UTC))
+
+    def read_photo_while_user_logs_spend(_kwargs):
+        holder["store"].update("u1", holder["eid"], lambda rec: rec.spend.append(entry))
+        return IDEAS
+
+    c = make_client(ai=FakeAI(vision=read_photo_while_user_logs_spend))
+    holder.update(store=c.app.state.store, eid=save_event(c))
+    r = upload(c, holder["eid"], JPEG)
+    assert r.status_code == 200 and [e["id"] for e in r.json()["spend"]] == ["s1"]
+    assert len(r.json()["plan"]["photo_ideas"]) == 1

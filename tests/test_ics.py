@@ -28,7 +28,7 @@ def test_done_items_excluded():
 
 def test_text_escaping():
     c, _ = cal(title="Venue, decor; lights\\ x\nnew")
-    assert "SUMMARY:Venue\\, decor\; lights\\\\ x\\nnew" in c.replace("\r\n ", "")
+    assert "SUMMARY:Venue\\, decor\\; lights\\\\ x\\nnew" in c.replace("\r\n ", "")
 
 
 def test_folding_counts_octets_for_devanagari():
@@ -36,3 +36,10 @@ def test_folding_counts_octets_for_devanagari():
     c, _ = cal(title=title)
     assert all(len(line.encode()) <= 75 for line in c.split("\r\n"))
     assert f"SUMMARY:{title}" in c.replace("\r\n ", "")
+
+
+
+def test_lone_carriage_returns_and_control_chars_are_neutralised():
+    c, _ = cal(title="Book DJ\rATTENDEE:evil\x07")
+    assert "\r" not in c.replace("\r\n", "") and "\x07" not in c
+    assert "SUMMARY:Book DJ\\nATTENDEE:evil" in c.replace("\r\n ", "")

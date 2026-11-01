@@ -76,3 +76,13 @@ def test_calendar_endpoint(client):
 def test_calendar_rejects_tampered_skeleton(client):
     r = client.post("/api/calendar.ics", json={"input": event_input(), "skeleton": skeleton_dict(n_tasks=41)})
     assert r.status_code == 422
+
+
+
+@pytest.mark.parametrize("path,extra", [("/api/plans/refine", {"instruction": "add a DJ"}), ("/api/calendar.ics", {})])
+@pytest.mark.parametrize("bad_date", ["0001-01-01", "9999-12-31"])
+def test_extreme_event_dates_are_422_not_500(make_client, path, extra, bad_date):
+    ai = FakeAI(structured=SkeletonDraft(**skeleton_dict()))
+    body = {"input": event_input(event_date=bad_date), "skeleton": skeleton_dict()} | extra
+    r = make_client(ai=ai).post(path, json=body)
+    assert r.status_code == 422 and ai.calls == []

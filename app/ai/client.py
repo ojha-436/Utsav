@@ -11,6 +11,7 @@ from typing import Protocol, TypeVar
 
 import httpx
 from google import genai
+from google.auth.exceptions import GoogleAuthError
 from google.genai import errors as genai_errors
 from google.genai import types
 from pydantic import BaseModel, ValidationError
@@ -18,12 +19,14 @@ from pydantic import BaseModel, ValidationError
 from app.errors import AIUnavailable
 from app.models import Source
 
-try:  # google-genai accepts either httpx or its fork httpx2
+# Network failures (timeouts, refused or reset connections) and credential refresh
+# failures are worth another attempt. google-genai accepts httpx or its fork httpx2.
+try:
     import httpx2
 
-    _TIMEOUTS: tuple[type[Exception], ...] = (httpx.TimeoutException, httpx2.TimeoutException)
+    _TRANSIENT: tuple[type[Exception], ...] = (httpx.TransportError, httpx2.TransportError, GoogleAuthError)
 except ImportError:
-    _TIMEOUTS = (httpx.TimeoutException,)
+    _TRANSIENT = (httpx.TransportError, GoogleAuthError)
 
 log = logging.getLogger("utsav.ai")
 T = TypeVar("T", bound=BaseModel)
@@ -96,8 +99,8 @@ class GeminiClient:
                 if exc.code != 429 and exc.code < 500:
                     raise AIUnavailable("The AI service rejected the request") from exc
                 log.warning("gemini transient error", extra={"model": model, "status": exc.code})
-            except _TIMEOUTS:
-                log.warning("gemini timeout", extra={"model": model})
+            except _TRANSIENT as exc:
+                log.warning("gemini transport error", extra={"model": model, "reason": type(exc).__name__})
         raise AIUnavailable("The AI service is busy; please try again")
 
     def _json_call(self, contents: list, config: types.GenerateContentConfig, schema: type[T]) -> T:

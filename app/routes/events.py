@@ -27,7 +27,7 @@ from app.planning.timeline import vendor_item_id
 from app.store import EventRecord, EventStore
 
 router = APIRouter(prefix="/api/events")
-_EVENT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+_EVENT_ID = re.compile(r"^[A-Za-z0-9]{1,64}$")
 MAX_SPEND_ENTRIES = 500  # keeps each Firestore document well under its 1 MiB limit
 MAX_IMAGE_BYTES = 5_000_000
 MAX_PHOTO_IDEAS_KEPT = 20
@@ -74,17 +74,18 @@ def get_event(event_id: str = Depends(event_id_param), uid: str = Depends(requir
 @router.put("/{event_id}", response_model=EventResponse)
 def update_event(body: UpdateEventRequest, event_id: str = Depends(event_id_param), uid: str = Depends(require_user),
                  store: EventStore = Depends(get_store), today: date = Depends(get_today)) -> EventResponse:
-    record = store.get(uid, event_id)
-    if body.input is not None:
-        if body.input.event_date != record.input.event_date:
-            validate_event_date(body.input.event_date, today)
-        if body.input != record.input:
-            record.vendor_cache = None  # vendor results depend on city, size and budget
-        record.input = body.input
-    record.skeleton = body.skeleton
-    record.generated_from = "ai"
-    record.version += 1
-    return to_response(store.save(uid, record), today)
+    def apply(record: EventRecord) -> None:
+        if body.input is not None:
+            if body.input.event_date != record.input.event_date:
+                validate_event_date(body.input.event_date, today)
+            if body.input != record.input:
+                record.vendor_cache = None  # vendor results depend on city, size and budget
+            record.input = body.input
+        record.skeleton = body.skeleton
+        record.generated_from = "ai"
+        record.version += 1
+
+    return to_response(store.update(uid, event_id, apply), today)
 
 
 @router.delete("/{event_id}", status_code=204)
@@ -99,40 +100,43 @@ def toggle_item(body: TaskToggle, task_id: str, event_id: str = Depends(event_id
                 store: EventStore = Depends(get_store), today: date = Depends(get_today),
                 now: datetime = Depends(get_now)) -> EventResponse:
     """Tick or untick a timeline task or a vendor checklist item."""
-    record = store.get(uid, event_id)
-    item_ids = {t.id for t in record.skeleton.tasks} | {vendor_item_id(v.category_key) for v in record.skeleton.vendors}
-    if task_id not in item_ids:
-        raise NotFound("Task not found")
-    if body.done:
-        record.progress[task_id] = now
-    else:
-        record.progress.pop(task_id, None)
-    return to_response(store.save(uid, record), today)
+    def apply(record: EventRecord) -> None:
+        item_ids = {t.id for t in record.skeleton.tasks} | {vendor_item_id(v.category_key) for v in record.skeleton.vendors}
+        if task_id not in item_ids:
+            raise NotFound("Task not found")
+        if body.done:
+            record.progress[task_id] = now
+        else:
+            record.progress.pop(task_id, None)
+
+    return to_response(store.update(uid, event_id, apply), today)
 
 
 @router.post("/{event_id}/spend", status_code=201, response_model=EventResponse)
 def add_spend(body: SpendCreate, event_id: str = Depends(event_id_param), uid: str = Depends(require_user),
               store: EventStore = Depends(get_store), today: date = Depends(get_today),
               now: datetime = Depends(get_now)) -> EventResponse:
-    record = store.get(uid, event_id)
-    if body.category_key not in {c.key for c in ensure_contingency(record.skeleton.budget_categories)}:
-        raise InvalidInput("Pick one of this plan's budget categories")
-    if len(record.spend) >= MAX_SPEND_ENTRIES:
-        raise InvalidInput("This event already has the maximum number of spend entries")
-    record.spend.append(SpendEntry(id=uuid.uuid4().hex, category_key=body.category_key,
-                                   amount=body.amount, note=body.note, at=now))
-    return to_response(store.save(uid, record), today)
+    def apply(record: EventRecord) -> None:
+        if body.category_key not in {c.key for c in ensure_contingency(record.skeleton.budget_categories)}:
+            raise InvalidInput("Pick one of this plan's budget categories")
+        if len(record.spend) >= MAX_SPEND_ENTRIES:
+            raise InvalidInput("This event already has the maximum number of spend entries")
+        record.spend.append(SpendEntry(id=uuid.uuid4().hex, category_key=body.category_key,
+                                       amount=body.amount, note=body.note, at=now))
+
+    return to_response(store.update(uid, event_id, apply), today)
 
 
 @router.delete("/{event_id}/spend/{entry_id}", response_model=EventResponse)
 def delete_spend(entry_id: str, event_id: str = Depends(event_id_param), uid: str = Depends(require_user),
                  store: EventStore = Depends(get_store), today: date = Depends(get_today)) -> EventResponse:
-    record = store.get(uid, event_id)
-    remaining = [entry for entry in record.spend if entry.id != entry_id]
-    if len(remaining) == len(record.spend):
-        raise NotFound("Spend entry not found")
-    record.spend = remaining
-    return to_response(store.save(uid, record), today)
+    def apply(record: EventRecord) -> None:
+        remaining = [entry for entry in record.spend if entry.id != entry_id]
+        if len(remaining) == len(record.spend):
+            raise NotFound("Spend entry not found")
+        record.spend = remaining
+
+    return to_response(store.update(uid, event_id, apply), today)
 
 
 def sniff_image(data: bytes) -> str | None:
@@ -159,5 +163,8 @@ def add_photo_ideas(request: Request, image: UploadFile = File(...), event_id: s
     if mime is None:
         raise UnsupportedMedia("Upload a JPEG, PNG or WebP image")
     ideas = photo_ideas(ai, record.input, data, mime)
-    record.photo_ideas = (ideas + record.photo_ideas)[:MAX_PHOTO_IDEAS_KEPT]
-    return to_response(store.save(uid, record), today)
+
+    def apply(current: EventRecord) -> None:  # re-read: the user may have changed things during the AI call
+        current.photo_ideas = (ideas + current.photo_ideas)[:MAX_PHOTO_IDEAS_KEPT]
+
+    return to_response(store.update(uid, event_id, apply), today)

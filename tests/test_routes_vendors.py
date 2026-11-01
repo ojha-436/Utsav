@@ -77,3 +77,18 @@ def test_event_id_access(make_client):
     c = make_client(ai=grounded_ai())
     eid = save_event(c)
     assert vend(c, event_id=eid).status_code == 401 and vend(c, AUTH_U2, event_id=eid).status_code == 404
+
+
+
+def test_vendor_cache_write_keeps_changes_made_during_the_search(make_client):
+    holder = {}
+
+    def search_while_user_ticks(_kwargs):
+        holder["store"].update("u1", holder["eid"], lambda rec: rec.progress.__setitem__("book-venue", datetime(2026, 11, 1, tzinfo=UTC)))
+        return GroundedText(VJSON, [Source(title="A", uri="https://a.in")])
+
+    c = make_client(ai=FakeAI(grounded=search_while_user_ticks))
+    holder.update(store=c.app.state.store, eid=save_event(c))
+    assert vend(c, AUTH_U1, event_id=holder["eid"]).json()["items"]
+    record = c.app.state.store.get("u1", holder["eid"])
+    assert "book-venue" in record.progress and record.vendor_cache is not None

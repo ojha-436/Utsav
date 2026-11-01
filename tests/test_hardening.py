@@ -65,3 +65,15 @@ def test_request_log_has_no_body(client, capsys):
     client.post("/api/healthz", json={"notes": "SECRET-NOTE"})
     out = capsys.readouterr().out
     assert '"path": "/api/healthz"' in out and "SECRET-NOTE" not in out
+
+
+
+def test_chunked_body_over_limit_is_413():
+    c = TestClient(create_app(safe_settings(max_body_bytes=1000)), raise_server_exceptions=False)
+
+    def chunks():
+        for _ in range(10):
+            yield b"x" * 500
+
+    r = c.post("/api/calendar.ics", content=chunks(), headers={"content-type": "application/json"})
+    assert r.status_code == 413 and r.json()["error"]["code"] == "payload_too_large"

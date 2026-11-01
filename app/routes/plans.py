@@ -7,7 +7,7 @@ from app.ai.client import AIClient
 from app.ai.service import find_vendors, generate_skeleton, refine_skeleton
 from app.auth import optional_user
 from app.deps import get_ai, get_now, get_store, get_today, rate_limit_ai
-from app.errors import Unauthorized
+from app.errors import NotFound, Unauthorized
 from app.models import (
     CalendarRequest,
     GenerateRequest,
@@ -64,7 +64,9 @@ def vendors(body: VendorRequest, uid: str | None = Depends(optional_user), ai: A
 
     result = find_vendors(ai, body.input, body.category_keys)
     if record is not None and result.items:
-        record.vendor_cache = VendorCache(fetched_at=now, category_keys=body.category_keys,
-                                          items=result.items, sources=result.sources)
-        store.save(uid, record)
+        cache = VendorCache(fetched_at=now, category_keys=body.category_keys, items=result.items, sources=result.sources)
+        try:  # write only the cache onto the current record; the search can take 10-20 s
+            store.update(uid, record.id, lambda current: setattr(current, "vendor_cache", cache))
+        except NotFound:
+            pass  # deleted during the search; the results are still useful to show
     return result

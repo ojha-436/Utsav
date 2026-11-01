@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from google.auth import exceptions as auth_exceptions
 from google.genai import errors as genai_errors
 from pydantic import BaseModel
 
@@ -98,3 +99,11 @@ def test_grounded_reports_whether_search_ran():
     assert make(with_queries)[0].grounded(system="s", prompt="p").searched is True
     assert make(resp("t", [web("https://a.in", "A")]))[0].grounded(system="s", prompt="p").searched is True
     assert make(SimpleNamespace(text="t", candidates=[]))[0].grounded(system="s", prompt="p").searched is False
+
+
+@pytest.mark.parametrize("exc", [httpx.ConnectError("down"), httpx.RemoteProtocolError("reset"),
+                                 auth_exceptions.RefreshError("token refresh failed")])
+def test_transport_and_auth_errors_are_transient(exc):
+    assert make(exc, resp('{"n": 5}'))[0].structured(system="s", prompt="p", schema=Out).n == 5
+    with pytest.raises(AIUnavailable):
+        make(exc, exc, exc)[0].structured(system="s", prompt="p", schema=Out)

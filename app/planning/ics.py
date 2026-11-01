@@ -1,14 +1,18 @@
 """RFC 5545 calendar export: the event day plus every open task and vendor booking."""
+import re
 from datetime import UTC, date, datetime, timedelta
 
 from app.models import EventInput, ScheduledTask, ScheduledVendor
 
 _MAX_OCTETS = 75
+_NEWLINES = re.compile(r"\r\n|\r|\n")
+_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")  # keeps \t and \n
 
 
 def _escape(text: str) -> str:
-    return (text.replace("\\", "\\\\").replace(";", "\;").replace(",", "\\,")
-            .replace("\r\n", "\\n").replace("\n", "\\n"))
+    """RFC 5545 TEXT escaping. Every line-break form becomes \\n; other control characters are dropped."""
+    text = _CONTROL.sub("", _NEWLINES.sub("\n", text))
+    return text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
 
 
 def _fold(line: str) -> str:

@@ -4,7 +4,7 @@ from app.errors import AIUnavailable
 
 class FakeAI:
     """Stands in for GeminiClient. Each slot is a value, an Exception to raise,
-    or a list consumed one item per call. Records (method, kwargs) per call."""
+    a callable(kwargs) -> value, or a list consumed one item per call. Records (method, kwargs) per call."""
 
     def __init__(self, structured=None, grounded=None, vision=None):
         self._slots = {"structured": structured, "grounded": grounded, "vision": vision}
@@ -18,6 +18,8 @@ class FakeAI:
             raise AIUnavailable(f"FakeAI.{method} not scripted")
         if isinstance(item, Exception):
             raise item
+        if callable(item):  # side effect during the call, e.g. a concurrent write
+            return item(kwargs)
         return item
 
     def structured(self, **kwargs):

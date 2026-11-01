@@ -4,7 +4,7 @@ import time
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -35,7 +35,31 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "strict-origin-when-cross-origin",
 }
 _REQUEST_ID = re.compile(r"^[A-Za-z0-9-]{8,64}$")
-_HTTP_CODES = {404: "not_found", 405: "method_not_allowed"}
+_HTTP_CODES = {404: "not_found", 405: "method_not_allowed", 413: "payload_too_large"}
+
+
+class BodyLimitMiddleware:
+    """Counts body bytes as they arrive, so chunked requests without Content-Length can't exceed the limit."""
+
+    def __init__(self, app, max_bytes: int):
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        received = 0
+
+        async def limited_receive():
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.max_bytes:
+                    raise HTTPException(status_code=413, detail="Request body is too large")
+            return message
+
+        await self.app(scope, limited_receive, send)
 
 
 def error_response(status: int, code: str, message: str) -> JSONResponse:
@@ -113,6 +137,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.ai_limiter = RateLimiter(10, 60)
     app.state.photo_limiter = RateLimiter(5, 60)
     _install_error_handlers(app)
+    # Added first so it sits inside the guard: routes read the counting receive directly.
+    app.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_body_bytes)
     _install_middleware(app, settings)
     app.include_router(meta.router)
     app.include_router(plans.router)
