@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plan your event · Utsav</title>
+  <meta name="description" content="Plan a wedding, birthday or community event with an AI planner: budget, timeline, vendor checklist and ideas.">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script type="module" src="/static/js/main.js"></script>
+</head>
+<body data-event-type="wedding">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="/">Utsav</a>
+    <nav id="account" class="account" aria-label="Account"></nav>
+  </header>
+
+  <main id="main" class="page">
+    <div id="alert" class="alert" role="alert" hidden></div>
+    <p id="status" class="status" aria-live="polite"></p>
+
+    <section id="wizard" class="wizard" aria-labelledby="wizard-title">
+      <h1 id="wizard-title">Plan your event</h1>
+      <ol class="stepper" aria-label="Steps">
+        <li data-step-marker="0" aria-current="step">Occasion</li>
+        <li data-step-marker="1">Details</li>
+        <li data-step-marker="2">Vibe</li>
+      </ol>
+
+      <form id="wizard-form" novalidate>
+        <fieldset class="step" data-step="0">
+          <legend>What are you celebrating?</legend>
+          <div class="type-cards">
+            <label class="type-card">
+              <input type="radio" name="event_type" value="wedding" checked>
+              <span class="type-name">Wedding</span>
+              <span class="type-hint">Ceremonies, receptions and everything between</span>
+            </label>
+            <label class="type-card">
+              <input type="radio" name="event_type" value="birthday">
+              <span class="type-name">Birthday</span>
+              <span class="type-hint">From a child's party to a milestone dinner</span>
+            </label>
+            <label class="type-card">
+              <input type="radio" name="event_type" value="community">
+              <span class="type-name">Community event</span>
+              <span class="type-hint">Festivals, fairs, drives and gatherings</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="step" data-step="1" hidden>
+          <legend>The basics</legend>
+          <div class="field-grid">
+            <div class="field">
+              <label for="event_date">Event date</label>
+              <input id="event_date" name="event_date" type="date" required aria-describedby="event_date-error">
+              <p class="field-error" id="event_date-error"></p>
+            </div>
+            <div class="field">
+              <label for="guest_count">Guests</label>
+              <input id="guest_count" name="guest_count" type="number" inputmode="numeric" min="1" max="5000" step="1" required aria-describedby="guest_count-error">
+              <p class="field-error" id="guest_count-error"></p>
+            </div>
+            <div class="field">
+              <label for="budget_inr">Total budget (₹)</label>
+              <input id="budget_inr" name="budget_inr" type="number" inputmode="numeric" min="1000" max="100000000" step="1" required aria-describedby="budget_inr-hint budget_inr-error">
+              <p class="field-hint" id="budget_inr-hint"></p>
+              <p class="field-error" id="budget_inr-error"></p>
+            </div>
+            <div class="field">
+              <label for="city">City</label>
+              <input id="city" name="city" type="text" minlength="2" maxlength="80" autocomplete="address-level2" required aria-describedby="city-error">
+              <p class="field-error" id="city-error"></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="step" data-step="2" hidden>
+          <legend>What's the vibe?</legend>
+          <p class="field-hint" id="vibe-hint">Pick up to 5.</p>
+          <div class="chips" role="group" aria-describedby="vibe-hint">
+            <button type="button" class="chip" data-vibe="traditional" aria-pressed="false">Traditional</button>
+            <button type="button" class="chip" data-vibe="modern" aria-pressed="false">Modern</button>
+            <button type="button" class="chip" data-vibe="eco" aria-pressed="false">Eco-friendly</button>
+            <button type="button" class="chip" data-vibe="intimate" aria-pressed="false">Intimate</button>
+            <button type="button" class="chip" data-vibe="grand" aria-pressed="false">Grand</button>
+            <button type="button" class="chip" data-vibe="budget-friendly" aria-pressed="false">Budget-friendly</button>
+            <button type="button" class="chip" data-vibe="outdoor" aria-pressed="false">Outdoor</button>
+            <button type="button" class="chip" data-vibe="themed" aria-pressed="false">Themed</button>
+          </div>
+          <div class="field">
+            <label for="notes">Anything we should know? <span class="optional">(optional)</span></label>
+            <textarea id="notes" name="notes" rows="3" maxlength="500" aria-describedby="notes-count" placeholder="Customs to follow, the birthday person's age, the cause you're raising money for…"></textarea>
+            <p class="field-hint" id="notes-count">0 / 500</p>
+          </div>
+        </fieldset>
+
+        <div class="wizard-nav">
+          <button type="button" class="btn btn-ghost" id="wizard-back" hidden>Back</button>
+          <button type="button" class="btn btn-primary" id="wizard-next">Next</button>
+          <button type="submit" class="btn btn-primary" id="wizard-generate" hidden>Generate my plan</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="dashboard" class="dashboard" aria-labelledby="plan-title" hidden>
+      <header class="plan-header">
+        <p class="eyebrow" id="plan-meta"></p>
+        <h1 id="plan-title" tabindex="-1"></h1>
+        <p id="plan-summary" class="lede"></p>
+        <div id="banners"></div>
+        <div class="plan-actions" id="plan-actions">
+          <button type="button" class="btn btn-ghost" id="new-plan">Start a new plan</button>
+        </div>
+      </header>
+
+      <form id="refine-form" class="refine">
+        <label for="refine-input">Refine this plan</label>
+        <div class="refine-row">
+          <input id="refine-input" name="instruction" type="text" maxlength="300" required placeholder="e.g. make it outdoor, cut decor by 15%, add a DJ">
+          <button type="submit" class="btn btn-primary" id="refine-submit">Refine</button>
+        </div>
+      </form>
+
+      <div class="tabs" role="tablist" aria-label="Plan sections">
+        <button type="button" role="tab" id="tab-budget" aria-controls="panel-budget" aria-selected="true">Budget</button>
+        <button type="button" role="tab" id="tab-timeline" aria-controls="panel-timeline" aria-selected="false" tabindex="-1">Timeline</button>
+        <button type="button" role="tab" id="tab-vendors" aria-controls="panel-vendors" aria-selected="false" tabindex="-1">Vendors</button>
+        <button type="button" role="tab" id="tab-ideas" aria-controls="panel-ideas" aria-selected="false" tabindex="-1">Ideas</button>
+      </div>
+      <div id="panel-budget" class="panel" role="tabpanel" aria-labelledby="tab-budget" tabindex="0"></div>
+      <div id="panel-timeline" class="panel" role="tabpanel" aria-labelledby="tab-timeline" tabindex="0" hidden></div>
+      <div id="panel-vendors" class="panel" role="tabpanel" aria-labelledby="tab-vendors" tabindex="0" hidden></div>
+      <div id="panel-ideas" class="panel" role="tabpanel" aria-labelledby="tab-ideas" tabindex="0" hidden></div>
+    </section>
+  </main>
+</body>
+</html>

@@ -2,10 +2,12 @@ import logging
 import re
 import time
 import uuid
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from google import genai
@@ -18,6 +20,7 @@ from app.ratelimit import RateLimiter
 from app.routes import meta, plans
 
 log = logging.getLogger("utsav.http")
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
@@ -101,7 +104,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     _install_middleware(app, settings)
     app.include_router(meta.router)
     app.include_router(plans.router)
+    _install_pages(app)
     return app
+
+
+def _install_pages(app: FastAPI) -> None:
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+    @app.get("/", include_in_schema=False)
+    def landing() -> FileResponse:
+        return FileResponse(STATIC_DIR / "index.html")
+
+    @app.get("/app", include_in_schema=False)
+    def planner() -> FileResponse:
+        return FileResponse(STATIC_DIR / "app.html")
 
 
 app = create_app()
