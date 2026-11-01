@@ -23,7 +23,8 @@ EVENT_GUIDANCE: dict[EventType, str] = {
         "Cover cake and food, venue, entertainment, decor, invitations and return gifts."
     ),
     "community": (
-        "Community event: include police, municipal and sound permissions, volunteers, sponsorship, "
+        "Community event: Always include separate tasks for police permission, municipal permission for the venue "
+        "and sound (loudspeaker) permission, scheduled well ahead. Also cover volunteers, sponsorship, "
         "safety and first aid, publicity, and waste management and cleanup."
     ),
 }

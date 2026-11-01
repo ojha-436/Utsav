@@ -3,7 +3,7 @@ import json
 import pytest
 
 from app.ai.client import GroundedText
-from app.ai.prompts import SYSTEM_PLANNER, skeleton_prompt
+from app.ai.prompts import EVENT_GUIDANCE, SYSTEM_PLANNER, skeleton_prompt
 from app.ai.service import (
     VENDOR_FALLBACK_MESSAGE,
     PhotoIdeasDraft,
@@ -76,3 +76,7 @@ def test_find_vendors_requires_a_real_search():
     text = '```json\n{"vendors":[{"category_key":"catering","name":"Maybe Invented","why":"w"}]}\n```'
     r = find_vendors(FakeAI(grounded=GroundedText(text, [], searched=False)), E(), ["catering"])
     assert r.items == [] and r.message == VENDOR_FALLBACK_MESSAGE
+
+
+def test_community_guidance_requires_permission_tasks():
+    assert "Always include separate tasks for police permission" in EVENT_GUIDANCE["community"]
